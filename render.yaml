@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: midline-api
+    runtime: docker
+    dockerfilePath: midline/backend/Dockerfile
+    dockerContext: midline/backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_NAME
+        value: Midline API
+      - key: ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: midline
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_MINUTES
+        value: 10080
+      - key: FRONTEND_ORIGINS
+        value: https://midline-web.onrender.com
+
+  - type: web
+    name: midline-web
+    runtime: static
+    buildCommand: cd midline/frontend && npm ci && npm run build
+    staticPublishPath: midline/frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://midline-api.onrender.com
