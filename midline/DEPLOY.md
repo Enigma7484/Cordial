@@ -3,10 +3,10 @@
 Recommended MVP deployment:
 
 - Frontend: Vercel
-- Backend: Koyeb
+- Backend: Back4App Containers
 - Database: MongoDB Atlas
 
-This gives the frontend the best free static hosting experience while avoiding Render's 15-minute backend sleep window. Koyeb's free instance still scales to zero after 1 hour without traffic, so it is not a production SLA, but it is friendlier for demos.
+This gives the frontend the best free static hosting experience while avoiding credit-card-gated backend hosts. Back4App Containers has a no-credit-card free tier for Dockerized apps. It is still not a production SLA, but it is a better fit for demos when a payment method is off the table.
 
 ## Required Secrets
 
@@ -22,16 +22,16 @@ Also create a strong JWT secret:
 JWT_SECRET=<long-random-string>
 ```
 
-## Backend on Koyeb
+## Backend on Back4App Containers
 
-Create a Koyeb Web Service from the GitHub repo:
+Create a Back4App Containers app from the GitHub repo:
 
 ```bash
 Repository: Enigma7484/Cordial
 Branch: main
-Work directory: midline/backend
-Builder: Dockerfile
-Instance: Free
+Root directory: midline/backend
+Dockerfile: Dockerfile
+Plan: Free
 ```
 
 Set environment variables:
@@ -47,12 +47,12 @@ JWT_EXPIRE_MINUTES=10080
 FRONTEND_ORIGINS=https://<your-vercel-domain>
 ```
 
-Koyeb provides `PORT` automatically. The backend Dockerfile uses it.
+Back4App provides `PORT` automatically. The backend Dockerfile uses it.
 
 After deploy, verify:
 
 ```bash
-https://<your-koyeb-domain>/health
+https://<your-back4app-domain>/health
 ```
 
 ## Frontend on Vercel
@@ -70,18 +70,18 @@ Output Directory: dist
 Set environment variables:
 
 ```bash
-VITE_API_URL=https://<your-koyeb-domain>
+VITE_API_URL=https://<your-back4app-domain>
 ```
 
 The frontend includes `vercel.json` for SPA routing.
 
-After Vercel gives you the frontend domain, update Koyeb:
+After Vercel gives you the frontend domain, update Back4App:
 
 ```bash
 FRONTEND_ORIGINS=https://<your-vercel-domain>
 ```
 
-Then redeploy the Koyeb backend.
+Then redeploy the Back4App backend.
 
 ## Render Alternative
 
