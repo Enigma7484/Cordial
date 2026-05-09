@@ -3,7 +3,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_db
-from app.schemas import FollowupIn, FollowupStatusIn
+from app.schemas import FollowupIn, FollowupStatusIn, FollowupUpdateIn
 from app.security import get_current_user
 from app.utils import now_utc, public_user, serialize_doc
 
@@ -67,3 +67,37 @@ async def update_followup_status(
     )
     updated = await db.followups.find_one({"_id": followup_id})
     return await serialize_followup(updated)
+
+
+@router.put("/{followup_id}")
+async def update_followup(
+    followup_id: str,
+    payload: FollowupUpdateIn,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    db = get_db()
+    followup = await db.followups.find_one({"_id": followup_id, "user_id": current_user["_id"]})
+    if not followup:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+
+    await db.followups.update_one(
+        {"_id": followup_id},
+        {
+            "$set": {
+                "text": payload.text,
+                "due_date": payload.due_date,
+                "status": payload.status,
+                "updated_at": now_utc(),
+            }
+        },
+    )
+    updated = await db.followups.find_one({"_id": followup_id})
+    return await serialize_followup(updated)
+
+
+@router.delete("/{followup_id}")
+async def delete_followup(followup_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+    result = await get_db().followups.delete_one({"_id": followup_id, "user_id": current_user["_id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+    return {"ok": True}

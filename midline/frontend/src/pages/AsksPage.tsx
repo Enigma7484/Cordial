@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import AskComposer from "../components/AskComposer";
 import AskList from "../components/AskList";
-import { api, Ask } from "../lib/api";
+import { api, Ask, Profile } from "../lib/api";
 
-export default function AsksPage() {
+export default function AsksPage({ profile }: { profile: Profile }) {
   const [asks, setAsks] = useState<Ask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,7 +35,14 @@ export default function AsksPage() {
       <section>
         {loading && <div className="panel text-sm text-neutral-500">Loading signals...</div>}
         {error && <div className="panel text-sm text-coral">{error}</div>}
-        {!loading && !error && <AskList asks={asks} />}
+        {!loading && !error && (
+          <AskList
+            asks={asks}
+            profile={profile}
+            onUpdated={(updated) => setAsks((current) => current.map((ask) => (ask.id === updated.id ? updated : ask)))}
+            onDeleted={(askId) => setAsks((current) => current.filter((ask) => ask.id !== askId))}
+          />
+        )}
       </section>
     </div>
   );

@@ -62,11 +62,27 @@ class FollowupStatusIn(BaseModel):
     status: Literal["open", "completed"]
 
 
+class FollowupUpdateIn(BaseModel):
+    text: str = Field(min_length=1, max_length=280)
+    due_date: datetime | None = None
+    status: Literal["open", "completed"] = "open"
+
+
 class EventCreateIn(BaseModel):
     name: str = Field(min_length=1, max_length=100)
 
 
+class EventUpdateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
 class AskCreateIn(BaseModel):
+    type: Literal["ask", "offer"]
+    text: str = Field(min_length=1, max_length=240)
+    tags: list[str] = []
+
+
+class AskUpdateIn(BaseModel):
     type: Literal["ask", "offer"]
     text: str = Field(min_length=1, max_length=240)
     tags: list[str] = []

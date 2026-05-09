@@ -1,9 +1,12 @@
+import { Pencil, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { api, Event } from "../lib/api";
+import { api, Event, Profile } from "../lib/api";
 
-export default function EventPage() {
+export default function EventPage({ profile }: { profile: Profile }) {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [editingName, setEditingName] = useState("");
+  const [editingEventId, setEditingEventId] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
   const [activeEventId, setActiveEventId] = useState("");
   const [message, setMessage] = useState("");
@@ -12,6 +15,7 @@ export default function EventPage() {
   const [busy, setBusy] = useState(false);
 
   const activeEvent = events.find((item) => item.id === activeEventId) || events[0] || null;
+  const isHost = activeEvent?.host_id === profile.id;
 
   async function loadEvents() {
     setError("");
@@ -74,6 +78,53 @@ export default function EventPage() {
     }
   }
 
+  function startEditingEvent(event: Event) {
+    setEditingEventId(event.id);
+    setEditingName(event.name);
+    setError("");
+  }
+
+  async function saveEventEdit(event: Event) {
+    setError("");
+    try {
+      const updated = await api<Event>(`/events/${event.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ name: editingName }),
+      });
+      upsertEvent(updated);
+      setEditingEventId("");
+      setEditingName("");
+    } catch (editError) {
+      setError(editError instanceof Error ? editError.message : "Could not edit event");
+    }
+  }
+
+  async function deleteEvent(event: Event) {
+    setError("");
+    try {
+      await api<{ ok: boolean }>(`/events/${event.id}`, { method: "DELETE" });
+      const remaining = events.filter((item) => item.id !== event.id);
+      setEvents(remaining);
+      setActiveEventId(remaining[0]?.id || "");
+      setMessage("Event deleted.");
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Could not delete event");
+    }
+  }
+
+  async function leaveEvent(event: Event) {
+    setError("");
+    try {
+      await api<Event>(`/events/${event.id}/leave`, { method: "POST" });
+      const remaining = events.filter((item) => item.id !== event.id);
+      setEvents(remaining);
+      setActiveEventId(remaining[0]?.id || "");
+      setMessage("Left event.");
+    } catch (leaveError) {
+      setError(leaveError instanceof Error ? leaveError.message : "Could not leave event");
+    }
+  }
+
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-2">
       <section>
@@ -111,11 +162,42 @@ export default function EventPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="label">Active event</p>
-              <h2 className="mt-2 text-2xl font-black">{activeEvent.name}</h2>
+              {editingEventId === activeEvent.id ? (
+                <div className="mt-2 flex max-w-md gap-2">
+                  <input className="input" value={editingName} onChange={(event) => setEditingName(event.target.value)} />
+                  <button className="btn-primary !h-10 !min-h-10 !px-3" onClick={() => saveEventEdit(activeEvent)} type="button">
+                    Save
+                  </button>
+                  <button className="btn-soft !h-10 !min-h-10 !px-3" onClick={() => setEditingEventId("")} type="button">
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-2">
+                  <h2 className="text-2xl font-black">{activeEvent.name}</h2>
+                  {isHost && (
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => startEditingEvent(activeEvent)} title="Rename event">
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="mt-3 inline-flex rounded-lg bg-ink px-4 py-2 font-mono text-2xl font-black tracking-widest text-white">
                 {activeEvent.code}
               </p>
               <p className="mt-3 text-sm text-neutral-500">{activeEvent.attendees.length} attendee(s)</p>
+              <div className="mt-4 flex gap-2">
+                {isHost ? (
+                  <button className="btn-soft !h-9 !min-h-9 !px-3 text-coral" onClick={() => deleteEvent(activeEvent)}>
+                    <Trash2 size={14} />
+                    Delete event
+                  </button>
+                ) : (
+                  <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => leaveEvent(activeEvent)}>
+                    Leave event
+                  </button>
+                )}
+              </div>
             </div>
             <div className="min-w-48">
               <p className="text-sm font-bold">Attendees</p>

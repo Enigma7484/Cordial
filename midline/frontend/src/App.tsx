@@ -86,8 +86,8 @@ export default function App() {
       <main className="mx-auto max-w-6xl px-4 py-5 pb-24">
         {page === "home" && <Home profile={profile} />}
         {page === "profile" && <ProfilePage profile={profile} onSaved={setProfile} />}
-        {page === "events" && <EventPage />}
-        {page === "asks" && <AsksPage />}
+        {page === "events" && <EventPage profile={profile} />}
+        {page === "asks" && <AsksPage profile={profile} />}
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-white md:hidden">

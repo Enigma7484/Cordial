@@ -1,4 +1,4 @@
-import { CalendarPlus, Check, Handshake, Plus, RotateCcw } from "lucide-react";
+import { CalendarPlus, Check, Handshake, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { api, Connection, Followup, Profile } from "../lib/api";
 
@@ -9,6 +9,9 @@ export default function Home({ profile }: { profile: Profile }) {
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [followupText, setFollowupText] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [editingFollowupId, setEditingFollowupId] = useState("");
+  const [editingText, setEditingText] = useState("");
+  const [editingDueDate, setEditingDueDate] = useState("");
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -102,6 +105,42 @@ export default function Home({ profile }: { profile: Profile }) {
     }
   }
 
+  function startEditingFollowup(item: Followup) {
+    setEditingFollowupId(item.id);
+    setEditingText(item.text);
+    setEditingDueDate(item.due_date ? item.due_date.slice(0, 10) : "");
+  }
+
+  async function saveFollowupEdit(item: Followup) {
+    setError("");
+    try {
+      const updated = await api<Followup>(`/followups/${item.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          text: editingText,
+          due_date: editingDueDate ? new Date(editingDueDate).toISOString() : null,
+          status: item.status,
+        }),
+      });
+      setFollowups((current) => current.map((row) => (row.id === item.id ? updated : row)));
+      setEditingFollowupId("");
+      setEditingText("");
+      setEditingDueDate("");
+    } catch (editError) {
+      setError(editError instanceof Error ? editError.message : "Could not edit follow-up");
+    }
+  }
+
+  async function deleteFollowup(item: Followup) {
+    setError("");
+    try {
+      await api<{ ok: boolean }>(`/followups/${item.id}`, { method: "DELETE" });
+      setFollowups((current) => current.filter((row) => row.id !== item.id));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Could not delete follow-up");
+    }
+  }
+
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-[1.1fr_0.9fr]">
       <section className="space-y-5">
@@ -192,18 +231,41 @@ export default function Home({ profile }: { profile: Profile }) {
           {openFollowups.length === 0 && <p className="text-sm text-neutral-500">No open cards yet.</p>}
           {openFollowups.map((item) => (
             <div key={item.id} className="rounded-lg border border-line p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">{item.text}</p>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    @{item.other_user?.handle || "connection"}
-                    {item.due_date ? ` - due ${new Date(item.due_date).toLocaleDateString()}` : ""}
-                  </p>
+              {editingFollowupId === item.id ? (
+                <div className="space-y-2">
+                  <input className="input" value={editingText} onChange={(event) => setEditingText(event.target.value)} />
+                  <input className="input" type="date" value={editingDueDate} onChange={(event) => setEditingDueDate(event.target.value)} />
+                  <div className="flex gap-2">
+                    <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={() => saveFollowupEdit(item)} type="button">
+                      Save
+                    </button>
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => setEditingFollowupId("")} type="button">
+                      <X size={14} />
+                    </button>
+                  </div>
                 </div>
-                <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Mark completed">
-                  <Check size={15} />
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">{item.text}</p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      @{item.other_user?.handle || "connection"}
+                      {item.due_date ? ` - due ${new Date(item.due_date).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => startEditingFollowup(item)} title="Edit">
+                      <Pencil size={14} />
+                    </button>
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => deleteFollowup(item)} title="Delete">
+                      <Trash2 size={14} />
+                    </button>
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Mark completed">
+                      <Check size={15} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -215,9 +277,14 @@ export default function Home({ profile }: { profile: Profile }) {
               {completedFollowups.map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-line p-3 opacity-70">
                   <p className="text-sm line-through">{item.text}</p>
-                  <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Reopen">
-                    <RotateCcw size={14} />
-                  </button>
+                  <div className="flex gap-1">
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => deleteFollowup(item)} title="Delete">
+                      <Trash2 size={14} />
+                    </button>
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Reopen">
+                      <RotateCcw size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -83,5 +83,6 @@ export type Ask = {
   text: string;
   tags: string[];
   created_at: string;
+  user_id?: string;
   user?: { name: string; handle: string; title: string };
 };

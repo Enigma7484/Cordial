@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pymongo.errors import DuplicateKeyError
 
 from app.db import get_db
-from app.schemas import EventCreateIn
+from app.schemas import EventCreateIn, EventUpdateIn
 from app.security import get_current_user
 from app.utils import make_event_code, now_utc, public_user, serialize_doc
 
@@ -59,3 +59,46 @@ async def join_event(event_code: str, current_user: dict = Depends(get_current_u
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     return await serialize_event(event)
+
+
+@router.put("/{event_id}")
+async def update_event(
+    event_id: str,
+    payload: EventUpdateIn,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    db = get_db()
+    event = await db.events.find_one({"_id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event["host_id"] != current_user["_id"]:
+        raise HTTPException(status_code=403, detail="Only the host can edit this event")
+
+    await db.events.update_one(
+        {"_id": event_id},
+        {"$set": {"name": payload.name, "updated_at": now_utc()}},
+    )
+    updated = await db.events.find_one({"_id": event_id})
+    return await serialize_event(updated)
+
+
+@router.post("/{event_id}/leave")
+async def leave_event(event_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+    db = get_db()
+    event = await db.events.find_one({"_id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event["host_id"] == current_user["_id"]:
+        raise HTTPException(status_code=400, detail="Hosts cannot leave their own event. Delete it instead.")
+
+    await db.events.update_one({"_id": event_id}, {"$pull": {"attendees": current_user["_id"]}})
+    updated = await db.events.find_one({"_id": event_id})
+    return await serialize_event(updated)
+
+
+@router.delete("/{event_id}")
+async def delete_event(event_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+    result = await get_db().events.delete_one({"_id": event_id, "host_id": current_user["_id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Event not found or you are not the host")
+    return {"ok": True}
