@@ -37,17 +37,17 @@ export default function AskComposer({ onCreated }: { onCreated: (ask: Ask) => vo
 
   return (
     <form onSubmit={submit} className="panel space-y-3">
-      <div className="grid grid-cols-2 gap-2 rounded-lg bg-paper p-1">
+      <div className="segmented">
         <button
           type="button"
-          className={`rounded-md px-3 py-2 text-sm font-semibold ${type === "ask" ? "bg-white shadow-sm" : ""}`}
+          className={`segment ${type === "ask" ? "segment-active" : ""}`}
           onClick={() => setType("ask")}
         >
           Ask
         </button>
         <button
           type="button"
-          className={`rounded-md px-3 py-2 text-sm font-semibold ${type === "offer" ? "bg-white shadow-sm" : ""}`}
+          className={`segment ${type === "offer" ? "segment-active" : ""}`}
           onClick={() => setType("offer")}
         >
           Offer

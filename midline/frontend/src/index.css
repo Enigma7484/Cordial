@@ -102,6 +102,18 @@ textarea {
   .panel {
     @apply rounded-lg border border-line bg-white p-4 shadow-soft;
   }
+
+  .segmented {
+    @apply grid grid-cols-2 gap-2 rounded-lg bg-paper p-1;
+  }
+
+  .segment {
+    @apply rounded-md px-3 py-2 text-sm font-semibold text-neutral-500 transition;
+  }
+
+  .segment-active {
+    @apply bg-white text-ink shadow-sm;
+  }
 }
 
 @layer utilities {
@@ -158,4 +170,13 @@ textarea {
 
 .dark .input::placeholder {
   color: #6f7785;
+}
+
+.dark .segment {
+  color: #a7adb8;
+}
+
+.dark .segment-active {
+  background: #f4f1ea;
+  color: #0d0f13;
 }

@@ -69,11 +69,11 @@ export default function AskList({
         <article key={ask.id} className="panel">
           {editingId === ask.id ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 rounded-lg bg-paper p-1">
-                <button className={`rounded-md px-3 py-2 text-sm font-semibold ${editingType === "ask" ? "bg-white shadow-sm" : ""}`} type="button" onClick={() => setEditingType("ask")}>
+              <div className="segmented">
+                <button className={`segment ${editingType === "ask" ? "segment-active" : ""}`} type="button" onClick={() => setEditingType("ask")}>
                   Ask
                 </button>
-                <button className={`rounded-md px-3 py-2 text-sm font-semibold ${editingType === "offer" ? "bg-white shadow-sm" : ""}`} type="button" onClick={() => setEditingType("offer")}>
+                <button className={`segment ${editingType === "offer" ? "segment-active" : ""}`} type="button" onClick={() => setEditingType("offer")}>
                   Offer
                 </button>
               </div>
