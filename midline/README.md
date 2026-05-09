@@ -48,6 +48,7 @@ If you change `frontend/.env`, restart `npm run dev`; Vite only reads env values
 ## Development Auth
 
 Use any email address. `POST /auth/request-otp` returns `dev_otp` when `ENV=development`, and the frontend displays that code.
+OTP requests and verification attempts are rate limited with MongoDB-backed counters.
 
 ## API Surface
 

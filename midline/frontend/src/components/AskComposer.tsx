@@ -14,10 +14,12 @@ export default function AskComposer({ onCreated }: { onCreated: (ask: Ask) => vo
   const [text, setText] = useState("");
   const [tags, setTags] = useState("");
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setMessage("");
+    setBusy(true);
     try {
       const ask = await api<Ask>("/asks", {
         method: "POST",
@@ -28,6 +30,8 @@ export default function AskComposer({ onCreated }: { onCreated: (ask: Ask) => vo
       setTags("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not post");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -63,9 +67,9 @@ export default function AskComposer({ onCreated }: { onCreated: (ask: Ask) => vo
         onChange={(event) => setTags(event.target.value)}
         placeholder="resume, pm, design"
       />
-      <button className="btn-primary w-full">
+      <button className="btn-primary w-full" disabled={busy}>
         <Send size={16} />
-        Post signal
+        {busy ? "Posting..." : "Post signal"}
       </button>
       {message && <p className="text-sm text-neutral-600">{message}</p>}
     </form>

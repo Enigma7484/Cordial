@@ -11,6 +11,8 @@ export default function Home({ profile }: { profile: Profile }) {
   const [dueDate, setDueDate] = useState("");
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const selectedConnection = connections.find((item) => item.id === selectedConnectionId) || null;
@@ -18,14 +20,21 @@ export default function Home({ profile }: { profile: Profile }) {
   const completedFollowups = followups.filter((item) => item.status === "completed");
 
   async function loadDashboard() {
-    const [connectionRows, followupRows] = await Promise.all([
-      api<Connection[]>("/connections/mine"),
-      api<Followup[]>("/followups/mine"),
-    ]);
-    setConnections(connectionRows);
-    setFollowups(followupRows);
-    if (!selectedConnectionId && connectionRows[0]) {
-      setSelectedConnectionId(connectionRows[0].id);
+    setError("");
+    try {
+      const [connectionRows, followupRows] = await Promise.all([
+        api<Connection[]>("/connections/mine"),
+        api<Followup[]>("/followups/mine"),
+      ]);
+      setConnections(connectionRows);
+      setFollowups(followupRows);
+      if (!selectedConnectionId && connectionRows[0]) {
+        setSelectedConnectionId(connectionRows[0].id);
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not load dashboard");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -36,6 +45,7 @@ export default function Home({ profile }: { profile: Profile }) {
   async function connect(event: FormEvent) {
     event.preventDefault();
     setMessage("");
+    setError("");
     setBusy(true);
     try {
       const res = await api<Connection>(`/connections/connect/${handle}`, {
@@ -51,7 +61,7 @@ export default function Home({ profile }: { profile: Profile }) {
       setNote("");
       setMessage(`Connected with @${res.other_user?.handle || handle}.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not connect");
+      setError(error instanceof Error ? error.message : "Could not connect");
     } finally {
       setBusy(false);
     }
@@ -60,26 +70,36 @@ export default function Home({ profile }: { profile: Profile }) {
   async function createFollowup(event: FormEvent) {
     event.preventDefault();
     if (!selectedConnection) return;
-    const created = await api<Followup>("/followups", {
-      method: "POST",
-      body: JSON.stringify({
-        connection_id: selectedConnection.id,
-        text: followupText,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
-      }),
-    });
-    setFollowups((current) => [created, ...current]);
-    setFollowupText("");
-    setDueDate("");
+    setError("");
+    try {
+      const created = await api<Followup>("/followups", {
+        method: "POST",
+        body: JSON.stringify({
+          connection_id: selectedConnection.id,
+          text: followupText,
+          due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        }),
+      });
+      setFollowups((current) => [created, ...current]);
+      setFollowupText("");
+      setDueDate("");
+    } catch (followupError) {
+      setError(followupError instanceof Error ? followupError.message : "Could not save follow-up");
+    }
   }
 
   async function toggleFollowup(item: Followup) {
     const nextStatus = item.status === "open" ? "completed" : "open";
-    const updated = await api<Followup>(`/followups/${item.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: nextStatus }),
-    });
-    setFollowups((current) => current.map((row) => (row.id === item.id ? updated : row)));
+    setError("");
+    try {
+      const updated = await api<Followup>(`/followups/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      setFollowups((current) => current.map((row) => (row.id === item.id ? updated : row)));
+    } catch (toggleError) {
+      setError(toggleError instanceof Error ? toggleError.message : "Could not update follow-up");
+    }
   }
 
   return (
@@ -114,11 +134,13 @@ export default function Home({ profile }: { profile: Profile }) {
             Connect
           </button>
           {message && <p className="text-sm text-neutral-600">{message}</p>}
+          {error && <p className="text-sm text-coral">{error}</p>}
         </form>
 
         <section className="panel space-y-3">
           <h2 className="font-bold">Connections</h2>
-          {connections.length === 0 && (
+          {loading && <p className="text-sm text-neutral-500">Loading connections...</p>}
+          {!loading && connections.length === 0 && (
             <p className="text-sm text-neutral-500">Connect by handle to start a lightweight contact list.</p>
           )}
           <div className="grid gap-2">

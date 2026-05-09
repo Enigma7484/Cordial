@@ -7,14 +7,24 @@ export default function EventPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [activeEventId, setActiveEventId] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const activeEvent = events.find((item) => item.id === activeEventId) || events[0] || null;
 
   async function loadEvents() {
-    const rows = await api<Event[]>("/events/mine");
-    setEvents(rows);
-    if (!activeEventId && rows[0]) {
-      setActiveEventId(rows[0].id);
+    setError("");
+    try {
+      const rows = await api<Event[]>("/events/mine");
+      setEvents(rows);
+      if (!activeEventId && rows[0]) {
+        setActiveEventId(rows[0].id);
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not load events");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -33,26 +43,34 @@ export default function EventPage() {
   async function createEvent(e: FormEvent) {
     e.preventDefault();
     setMessage("");
+    setError("");
+    setBusy(true);
     try {
       const res = await api<Event>("/events", { method: "POST", body: JSON.stringify({ name }) });
       upsertEvent(res);
       setName("");
       setMessage(`Created ${res.name}.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not create event");
+      setError(error instanceof Error ? error.message : "Could not create event");
+    } finally {
+      setBusy(false);
     }
   }
 
   async function joinEvent(e: FormEvent) {
     e.preventDefault();
     setMessage("");
+    setError("");
+    setBusy(true);
     try {
       const res = await api<Event>(`/events/join/${joinCode}`, { method: "POST" });
       upsertEvent(res);
       setJoinCode("");
       setMessage(`Joined ${res.name}.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not join event");
+      setError(error instanceof Error ? error.message : "Could not join event");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -67,7 +85,7 @@ export default function EventPage() {
         <form onSubmit={createEvent} className="space-y-3">
           <h2 className="font-bold">Create event</h2>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Founder coffee chat" required />
-          <button className="btn-primary w-full">Create code</button>
+          <button className="btn-primary w-full" disabled={busy}>Create code</button>
         </form>
       </section>
 
@@ -82,8 +100,9 @@ export default function EventPage() {
             maxLength={6}
             required
           />
-          <button className="btn-primary w-full">Join</button>
+          <button className="btn-primary w-full" disabled={busy}>Join</button>
           {message && <p className="text-sm text-neutral-600">{message}</p>}
+          {error && <p className="text-sm text-coral">{error}</p>}
         </form>
       </section>
 
@@ -116,7 +135,8 @@ export default function EventPage() {
       <section className="panel md:col-span-2">
         <h2 className="font-bold">My events</h2>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
-          {events.length === 0 && <p className="text-sm text-neutral-500">No events yet.</p>}
+          {loading && <p className="text-sm text-neutral-500">Loading events...</p>}
+          {!loading && events.length === 0 && <p className="text-sm text-neutral-500">No events yet.</p>}
           {events.map((item) => (
             <button
               key={item.id}

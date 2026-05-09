@@ -18,6 +18,8 @@ async def connect_to_mongo() -> None:
     await database.users.create_index("handle", unique=True)
     await database.otps.create_index("email")
     await database.otps.create_index("expires_at", expireAfterSeconds=0)
+    await database.otp_attempts.create_index("email")
+    await database.otp_attempts.create_index("created_at", expireAfterSeconds=3600)
     await database.connections.create_index([("user_a", 1), ("user_b", 1)], unique=True)
     await database.events.create_index("code", unique=True)
     await database.asks.create_index("created_at")

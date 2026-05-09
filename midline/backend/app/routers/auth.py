@@ -29,6 +29,11 @@ async def request_otp(payload: RequestOtpIn) -> RequestOtpOut:
     settings = get_settings()
     db = get_db()
     email = normalize_email(payload.email)
+    window_start = now_utc() - timedelta(minutes=settings.otp_rate_window_minutes)
+    recent_requests = await db.otps.count_documents({"email": email, "created_at": {"$gt": window_start}})
+    if recent_requests >= settings.otp_request_limit:
+        raise HTTPException(status_code=429, detail="Too many OTP requests. Try again in a few minutes.")
+
     code = make_otp()
 
     await db.otps.insert_one(
@@ -50,8 +55,14 @@ async def request_otp(payload: RequestOtpIn) -> RequestOtpOut:
 
 @router.post("/verify-otp", response_model=AuthOut)
 async def verify_otp(payload: VerifyOtpIn) -> AuthOut:
+    settings = get_settings()
     db = get_db()
     email = normalize_email(payload.email)
+    window_start = now_utc() - timedelta(minutes=settings.otp_rate_window_minutes)
+    recent_attempts = await db.otp_attempts.count_documents({"email": email, "created_at": {"$gt": window_start}})
+    if recent_attempts >= settings.otp_verify_limit:
+        raise HTTPException(status_code=429, detail="Too many verification attempts. Try again in a few minutes.")
+
     otp = await db.otps.find_one(
         {
             "email": email,
@@ -62,9 +73,25 @@ async def verify_otp(payload: VerifyOtpIn) -> AuthOut:
         sort=[("created_at", -1)],
     )
     if not otp:
+        await db.otp_attempts.insert_one(
+            {
+                "_id": str(uuid4()),
+                "email": email,
+                "created_at": now_utc(),
+                "success": False,
+            }
+        )
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     await db.otps.update_one({"_id": otp["_id"]}, {"$set": {"used": True}})
+    await db.otp_attempts.insert_one(
+        {
+            "_id": str(uuid4()),
+            "email": email,
+            "created_at": now_utc(),
+            "success": True,
+        }
+    )
 
     user = await db.users.find_one({"email": email})
     if not user:

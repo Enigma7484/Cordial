@@ -25,6 +25,12 @@ services:
         value: https://midline-web.onrender.com
       - key: SHOW_DEV_OTP
         value: true
+      - key: OTP_REQUEST_LIMIT
+        value: 5
+      - key: OTP_VERIFY_LIMIT
+        value: 10
+      - key: OTP_RATE_WINDOW_MINUTES
+        value: 15
 
   - type: web
     name: midline-web

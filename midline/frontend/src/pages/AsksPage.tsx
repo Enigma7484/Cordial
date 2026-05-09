@@ -5,9 +5,18 @@ import { api, Ask } from "../lib/api";
 
 export default function AsksPage() {
   const [asks, setAsks] = useState<Ask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   async function loadAsks() {
-    setAsks(await api<Ask[]>("/asks"));
+    setError("");
+    try {
+      setAsks(await api<Ask[]>("/asks"));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not load signals");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -24,7 +33,9 @@ export default function AsksPage() {
         </div>
       </section>
       <section>
-        <AskList asks={asks} />
+        {loading && <div className="panel text-sm text-neutral-500">Loading signals...</div>}
+        {error && <div className="panel text-sm text-coral">{error}</div>}
+        {!loading && !error && <AskList asks={asks} />}
       </section>
     </div>
   );

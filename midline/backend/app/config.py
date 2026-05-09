@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7
     frontend_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     show_dev_otp: bool = True
+    otp_request_limit: int = 5
+    otp_verify_limit: int = 10
+    otp_rate_window_minutes: int = 15
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
