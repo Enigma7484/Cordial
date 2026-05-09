@@ -27,16 +27,38 @@ def slugify_handle(value: str) -> str:
     return base[:18] or "user"
 
 
+def serialize_value(value):
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [serialize_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: serialize_value(item) for key, item in value.items()}
+    return value
+
+
 def serialize_doc(doc: dict | None) -> dict | None:
     if not doc:
         return None
     item = dict(doc)
     item["id"] = str(item.pop("_id"))
-    for key, value in list(item.items()):
-        if isinstance(value, datetime):
-            item[key] = value.isoformat()
-    return item
+    return serialize_value(item)
 
 
 def serialize_docs(docs: list[dict]) -> list[dict]:
     return [serialize_doc(doc) for doc in docs if doc]
+
+
+def public_user(user: dict | None) -> dict | None:
+    if not user:
+        return None
+    return {
+        "id": user["_id"],
+        "name": user.get("name", ""),
+        "handle": user.get("handle", ""),
+        "title": user.get("title", ""),
+        "bio": user.get("bio", ""),
+        "skills": user.get("skills", []),
+        "interests": user.get("interests", []),
+        "open_to": user.get("open_to", []),
+    }

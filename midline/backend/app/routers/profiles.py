@@ -4,7 +4,7 @@ from pymongo.errors import DuplicateKeyError
 from app.db import get_db
 from app.schemas import ProfileUpdate
 from app.security import get_current_user
-from app.utils import now_utc, serialize_doc
+from app.utils import now_utc, public_user, serialize_doc
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -12,6 +12,14 @@ router = APIRouter(prefix="/profile", tags=["profile"])
 @router.get("/me")
 async def get_my_profile(current_user: dict = Depends(get_current_user)) -> dict:
     return serialize_doc(current_user)
+
+
+@router.get("/{handle}")
+async def get_profile_by_handle(handle: str) -> dict:
+    user = await get_db().users.find_one({"handle": handle.lower()})
+    if not user:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return public_user(user)
 
 
 @router.put("/me")

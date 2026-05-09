@@ -6,9 +6,28 @@ from pymongo.errors import DuplicateKeyError
 from app.db import get_db
 from app.schemas import ConnectIn
 from app.security import get_current_user
-from app.utils import now_utc, serialize_doc
+from app.utils import now_utc, public_user, serialize_doc
 
 router = APIRouter(prefix="/connections", tags=["connections"])
+
+
+async def serialize_connection(connection: dict, current_user_id: str) -> dict:
+    db = get_db()
+    other_id = connection["user_b"] if connection["user_a"] == current_user_id else connection["user_a"]
+    other = await db.users.find_one({"_id": other_id})
+    item = serialize_doc(connection)
+    item["other_user"] = public_user(other)
+    return item
+
+
+@router.get("/mine")
+async def my_connections(current_user: dict = Depends(get_current_user)) -> list[dict]:
+    db = get_db()
+    cursor = db.connections.find(
+        {"$or": [{"user_a": current_user["_id"]}, {"user_b": current_user["_id"]}]}
+    ).sort("created_at", -1)
+    connections = await cursor.to_list(length=100)
+    return [await serialize_connection(connection, current_user["_id"]) for connection in connections]
 
 
 @router.post("/connect/{handle}")
@@ -27,7 +46,7 @@ async def connect_by_handle(
     user_a, user_b = sorted([current_user["_id"], other["_id"]])
     existing = await db.connections.find_one({"user_a": user_a, "user_b": user_b})
     if existing:
-        return serialize_doc(existing)
+        return await serialize_connection(existing, current_user["_id"])
 
     body = payload or ConnectIn()
     connection = {
@@ -45,4 +64,4 @@ async def connect_by_handle(
     except DuplicateKeyError:
         connection = await db.connections.find_one({"user_a": user_a, "user_b": user_b})
 
-    return serialize_doc(connection)
+    return await serialize_connection(connection, current_user["_id"])

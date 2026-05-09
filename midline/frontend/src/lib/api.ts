@@ -1,6 +1,6 @@
 import { clearToken, getToken } from "./auth";
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8001";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8010";
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
@@ -39,6 +39,42 @@ export type Profile = {
   links: { label: string; url: string }[];
   interests: string[];
   open_to: string[];
+};
+
+export type PublicUser = Pick<
+  Profile,
+  "id" | "name" | "handle" | "title" | "bio" | "skills" | "interests" | "open_to"
+>;
+
+export type Connection = {
+  id: string;
+  user_a: string;
+  user_b: string;
+  created_by: string;
+  note?: string;
+  event?: string;
+  created_at: string;
+  other_user?: PublicUser;
+};
+
+export type Followup = {
+  id: string;
+  connection_id: string;
+  text: string;
+  status: "open" | "completed";
+  due_date?: string | null;
+  created_at: string;
+  other_user?: PublicUser;
+};
+
+export type Event = {
+  id: string;
+  name: string;
+  code: string;
+  host_id: string;
+  attendees: string[];
+  attendee_profiles?: PublicUser[];
+  created_at: string;
 };
 
 export type Ask = {

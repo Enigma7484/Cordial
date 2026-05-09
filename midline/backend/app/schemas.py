@@ -47,8 +47,8 @@ class ProfileUpdate(BaseModel):
 
 
 class ConnectIn(BaseModel):
-    note: str = ""
-    event: str = ""
+    note: str = Field(default="", max_length=280)
+    event: str = Field(default="", max_length=120)
 
 
 class FollowupIn(BaseModel):
@@ -56,6 +56,10 @@ class FollowupIn(BaseModel):
     text: str = Field(min_length=1, max_length=280)
     due_date: datetime | None = None
     status: Literal["open", "completed"] = "open"
+
+
+class FollowupStatusIn(BaseModel):
+    status: Literal["open", "completed"]
 
 
 class EventCreateIn(BaseModel):

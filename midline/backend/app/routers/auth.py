@@ -44,7 +44,7 @@ async def request_otp(payload: RequestOtpIn) -> RequestOtpOut:
 
     return RequestOtpOut(
         message="OTP created. In development, use the returned code.",
-        dev_otp=code if settings.env == "development" else None,
+        dev_otp=code if settings.env == "development" or settings.show_dev_otp else None,
     )
 
 

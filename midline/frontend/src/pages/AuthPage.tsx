@@ -92,7 +92,8 @@ export default function AuthPage({ onAuthed }: { onAuthed: () => void }) {
               <input
                 id="email"
                 className="input"
-                type="email"
+                type="text"
+                inputMode="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@school.edu"

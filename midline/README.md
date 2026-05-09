@@ -25,7 +25,7 @@ python -m venv .venv
 .venv\Scripts\activate
 copy .env.example .env
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8010
 ```
 
 Frontend:
@@ -34,13 +34,13 @@ Frontend:
 cd frontend
 copy .env.example .env
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5174
 ```
 
-Open `http://localhost:5173`. The frontend is configured to call the backend at:
+Open `http://127.0.0.1:5174`. The frontend is configured to call the backend at:
 
 ```bash
-VITE_API_URL=http://localhost:8001
+VITE_API_URL=http://localhost:8010
 ```
 
 If you change `frontend/.env`, restart `npm run dev`; Vite only reads env values at startup.
@@ -56,10 +56,14 @@ Use any email address. `POST /auth/request-otp` returns `dev_otp` when `ENV=deve
 - `POST /auth/verify-otp`
 - `GET /profile/me`
 - `PUT /profile/me`
+- `GET /profile/{handle}`
+- `GET /connections/mine`
 - `POST /connections/connect/{handle}`
 - `POST /followups`
 - `GET /followups/mine`
+- `PATCH /followups/{followup_id}`
 - `POST /events`
+- `GET /events/mine`
 - `POST /events/join/{event_code}`
 - `POST /asks`
 - `GET /asks`

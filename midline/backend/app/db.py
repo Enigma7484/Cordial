@@ -10,6 +10,7 @@ database: AsyncIOMotorDatabase | None = None
 async def connect_to_mongo() -> None:
     global client, database
     settings = get_settings()
+    settings.validate_runtime()
     client = AsyncIOMotorClient(settings.mongodb_uri)
     database = client[settings.mongodb_db]
 

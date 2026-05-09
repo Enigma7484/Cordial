@@ -45,9 +45,12 @@ JWT_SECRET=<long-random-string>
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=10080
 FRONTEND_ORIGINS=https://<your-vercel-domain>
+SHOW_DEV_OTP=true
 ```
 
 Back4App provides `PORT` automatically. The backend Dockerfile uses it.
+
+`SHOW_DEV_OTP=true` is intentional for the MVP demo because no email provider is wired yet. Turn it off only after adding real transactional email.
 
 After deploy, verify:
 
