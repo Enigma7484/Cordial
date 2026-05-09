@@ -17,6 +17,14 @@ async def serialize_connection(connection: dict, current_user_id: str) -> dict:
     other = await db.users.find_one({"_id": other_id})
     item = serialize_doc(connection)
     item["other_user"] = public_user(other)
+    if connection.get("event_id"):
+        event = await db.events.find_one({"_id": connection["event_id"]})
+        if event:
+            item["event_context"] = {
+                "id": event["_id"],
+                "name": event.get("name", ""),
+                "code": event.get("code", ""),
+            }
     return item
 
 
@@ -49,6 +57,19 @@ async def connect_by_handle(
         return await serialize_connection(existing, current_user["_id"])
 
     body = payload or ConnectIn()
+    event_context = {}
+    if body.event_id:
+        event = await db.events.find_one({"_id": body.event_id})
+        if not event:
+            raise HTTPException(status_code=404, detail="Event context not found")
+        if current_user["_id"] not in event.get("attendees", []) or other["_id"] not in event.get("attendees", []):
+            raise HTTPException(status_code=400, detail="Both users must be attendees to connect through this event")
+        event_context = {
+            "event_id": event["_id"],
+            "event_code": event.get("code", ""),
+            "event_name": event.get("name", ""),
+        }
+
     connection = {
         "_id": str(uuid4()),
         "user_a": user_a,
@@ -57,6 +78,7 @@ async def connect_by_handle(
         "created_at": now_utc(),
         "note": body.note,
         "event": body.event,
+        **event_context,
     }
 
     try:

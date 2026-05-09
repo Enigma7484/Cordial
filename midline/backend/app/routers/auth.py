@@ -6,6 +6,7 @@ from pymongo.errors import DuplicateKeyError
 
 from app.config import get_settings
 from app.db import get_db
+from app.email import send_otp_email
 from app.schemas import AuthOut, RequestOtpIn, RequestOtpOut, VerifyOtpIn
 from app.security import create_access_token
 from app.utils import make_otp, normalize_email, now_utc, serialize_doc, slugify_handle
@@ -46,10 +47,17 @@ async def request_otp(payload: RequestOtpIn) -> RequestOtpOut:
             "used": False,
         }
     )
+    if settings.smtp_enabled:
+        try:
+            await send_otp_email(settings, email, code)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail="Could not send OTP email. Try again soon.") from exc
 
+    dev_otp = code if settings.env == "development" or settings.show_dev_otp else None
+    message = "OTP sent to your email." if settings.smtp_enabled else "OTP created. Use the returned development code."
     return RequestOtpOut(
-        message="OTP created. In development, use the returned code.",
-        dev_otp=code if settings.env == "development" or settings.show_dev_otp else None,
+        message=message,
+        dev_otp=dev_otp,
     )
 
 

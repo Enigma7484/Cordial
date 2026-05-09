@@ -7,6 +7,8 @@ export default function EventPage({ profile }: { profile: Profile }) {
   const [joinCode, setJoinCode] = useState("");
   const [editingName, setEditingName] = useState("");
   const [editingEventId, setEditingEventId] = useState("");
+  const [connectingHandle, setConnectingHandle] = useState("");
+  const [connectNote, setConnectNote] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
   const [activeEventId, setActiveEventId] = useState("");
   const [message, setMessage] = useState("");
@@ -125,6 +127,27 @@ export default function EventPage({ profile }: { profile: Profile }) {
     }
   }
 
+  async function connectFromEvent(handle: string, event: Event) {
+    setError("");
+    setConnectingHandle(handle);
+    try {
+      await api(`/connections/connect/${handle}`, {
+        method: "POST",
+        body: JSON.stringify({
+          note: connectNote || `Met at ${event.name}`,
+          event: event.name,
+          event_id: event.id,
+        }),
+      });
+      setMessage(`Connected with @${handle}.`);
+      setConnectNote("");
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : "Could not connect from event");
+    } finally {
+      setConnectingHandle("");
+    }
+  }
+
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-2">
       <section>
@@ -201,11 +224,30 @@ export default function EventPage({ profile }: { profile: Profile }) {
             </div>
             <div className="min-w-48">
               <p className="text-sm font-bold">Attendees</p>
+              <input
+                className="input mt-2"
+                value={connectNote}
+                onChange={(event) => setConnectNote(event.target.value)}
+                placeholder="Optional connection note"
+              />
               <div className="mt-2 space-y-2">
                 {(activeEvent.attendee_profiles || []).map((user) => (
                   <div key={user.id} className="rounded-lg border border-line p-2">
-                    <p className="text-sm font-semibold">{user.name}</p>
-                    <p className="text-xs text-neutral-500">@{user.handle}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">{user.name}</p>
+                        <p className="text-xs text-neutral-500">@{user.handle}</p>
+                      </div>
+                      {user.id !== profile.id && (
+                        <button
+                          className="btn-soft !h-8 !min-h-8 !px-2"
+                          onClick={() => connectFromEvent(user.handle, activeEvent)}
+                          disabled={connectingHandle === user.handle}
+                        >
+                          Connect
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

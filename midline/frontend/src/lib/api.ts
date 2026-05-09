@@ -53,6 +53,10 @@ export type Connection = {
   created_by: string;
   note?: string;
   event?: string;
+  event_id?: string;
+  event_code?: string;
+  event_name?: string;
+  event_context?: { id: string; name: string; code: string };
   created_at: string;
   other_user?: PublicUser;
 };

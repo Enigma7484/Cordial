@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     otp_request_limit: int = 5
     otp_verify_limit: int = 10
     otp_rate_window_minutes: int = 15
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = "Midline"
+    smtp_use_tls: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -26,6 +33,10 @@ class Settings(BaseSettings):
     def validate_runtime(self) -> None:
         if self.env == "production" and self.jwt_secret == "change-me-in-dev":
             raise ValueError("JWT_SECRET must be set to a strong value in production")
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_from_email)
 
 
 @lru_cache

@@ -49,12 +49,20 @@ SHOW_DEV_OTP=true
 OTP_REQUEST_LIMIT=5
 OTP_VERIFY_LIMIT=10
 OTP_RATE_WINDOW_MINUTES=15
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_FROM_EMAIL=
+SMTP_FROM_NAME=Midline
+SMTP_USE_TLS=true
 ```
 
 Back4App provides `PORT` automatically. The backend Dockerfile uses it.
 
 `SHOW_DEV_OTP=true` is intentional for the MVP demo because no email provider is wired yet. Turn it off only after adding real transactional email.
 The OTP limit variables keep demo auth from being hammered by repeated requests or brute-force attempts.
+To send real emails, fill the SMTP variables and set `SHOW_DEV_OTP=false`. Any SMTP provider works as long as it supports username/password auth.
 
 After deploy, verify:
 

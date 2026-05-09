@@ -49,6 +49,7 @@ class ProfileUpdate(BaseModel):
 class ConnectIn(BaseModel):
     note: str = Field(default="", max_length=280)
     event: str = Field(default="", max_length=120)
+    event_id: str = ""
 
 
 class FollowupIn(BaseModel):

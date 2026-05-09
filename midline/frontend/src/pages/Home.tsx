@@ -1,10 +1,12 @@
 import { CalendarPlus, Check, Handshake, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { api, Connection, Followup, Profile } from "../lib/api";
+import { api, Connection, Event, Followup, Profile } from "../lib/api";
 
 export default function Home({ profile }: { profile: Profile }) {
   const [handle, setHandle] = useState("");
   const [note, setNote] = useState("");
+  const [eventId, setEventId] = useState("");
+  const [events, setEvents] = useState<Event[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [followupText, setFollowupText] = useState("");
@@ -25,12 +27,14 @@ export default function Home({ profile }: { profile: Profile }) {
   async function loadDashboard() {
     setError("");
     try {
-      const [connectionRows, followupRows] = await Promise.all([
+      const [connectionRows, followupRows, eventRows] = await Promise.all([
         api<Connection[]>("/connections/mine"),
         api<Followup[]>("/followups/mine"),
+        api<Event[]>("/events/mine"),
       ]);
       setConnections(connectionRows);
       setFollowups(followupRows);
+      setEvents(eventRows);
       if (!selectedConnectionId && connectionRows[0]) {
         setSelectedConnectionId(connectionRows[0].id);
       }
@@ -53,7 +57,7 @@ export default function Home({ profile }: { profile: Profile }) {
     try {
       const res = await api<Connection>(`/connections/connect/${handle}`, {
         method: "POST",
-        body: JSON.stringify({ note, event: "" }),
+        body: JSON.stringify({ note, event: "", event_id: eventId }),
       });
       setConnections((current) => {
         const exists = current.some((item) => item.id === res.id);
@@ -62,6 +66,7 @@ export default function Home({ profile }: { profile: Profile }) {
       setSelectedConnectionId(res.id);
       setHandle("");
       setNote("");
+      setEventId("");
       setMessage(`Connected with @${res.other_user?.handle || handle}.`);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Could not connect");
@@ -168,6 +173,14 @@ export default function Home({ profile }: { profile: Profile }) {
             onChange={(event) => setNote(event.target.value)}
             placeholder="Optional context: met after the design panel, talked about PM internships..."
           />
+          <select className="input" value={eventId} onChange={(event) => setEventId(event.target.value)}>
+            <option value="">No event context</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name} ({event.code})
+              </option>
+            ))}
+          </select>
           <button className="btn-primary w-full" disabled={busy}>
             <Plus size={16} />
             Connect
@@ -198,6 +211,11 @@ export default function Home({ profile }: { profile: Profile }) {
                   {item.other_user?.title ? ` - ${item.other_user.title}` : ""}
                 </p>
                 {item.note && <p className="mt-2 text-sm text-neutral-600">{item.note}</p>}
+                {item.event_context && (
+                  <p className="mt-2 text-xs font-semibold text-blue">
+                    Met at {item.event_context.name} ({item.event_context.code})
+                  </p>
+                )}
               </button>
             ))}
           </div>
