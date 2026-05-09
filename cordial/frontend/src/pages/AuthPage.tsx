@@ -10,11 +10,11 @@ export default function AuthPage({ onAuthed }: { onAuthed: () => void }) {
   const [devOtp, setDevOtp] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [dark, setDark] = useState(() => localStorage.getItem("midline_theme") === "dark");
+  const [dark, setDark] = useState(() => localStorage.getItem("cordial_theme") === "dark");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("midline_theme", dark ? "dark" : "light");
+    localStorage.setItem("cordial_theme", dark ? "dark" : "light");
   }, [dark]);
 
   async function requestOtp(event: FormEvent) {
@@ -62,7 +62,7 @@ export default function AuthPage({ onAuthed }: { onAuthed: () => void }) {
       <section className="grid w-full max-w-5xl gap-8 md:grid-cols-[0.9fr_1fr] md:items-center">
         <div>
           <BrandMark size="lg" />
-          <h1 className="mt-6 text-5xl font-black tracking-normal md:text-6xl">Midline</h1>
+          <h1 className="mt-6 text-5xl font-black tracking-normal md:text-6xl">Cordial</h1>
           <p className="mt-3 text-xl font-semibold text-neutral-700">Make plans, not pings.</p>
           <p className="mt-5 max-w-sm text-sm leading-6 text-neutral-600">
             A cleaner way to keep the thread after a real conversation: campus events, coffee chats,

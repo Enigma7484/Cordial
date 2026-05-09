@@ -22,7 +22,7 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [page, setPage] = useState<Page>("home");
   const [loading, setLoading] = useState(Boolean(getToken()));
-  const [dark, setDark] = useState(() => localStorage.getItem("midline_theme") === "dark");
+  const [dark, setDark] = useState(() => localStorage.getItem("cordial_theme") === "dark");
 
   async function loadProfile() {
     setLoading(true);
@@ -43,11 +43,11 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("midline_theme", dark ? "dark" : "light");
+    localStorage.setItem("cordial_theme", dark ? "dark" : "light");
   }, [dark]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-sm">Loading Midline...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sm">Loading Cordial...</div>;
   }
 
   if (!profile) {
@@ -61,7 +61,7 @@ export default function App() {
           <button className="flex items-center gap-2 text-left" onClick={() => setPage("home")}>
             <BrandMark size="sm" />
             <span>
-              <span className="block text-sm font-bold">Midline</span>
+              <span className="block text-sm font-bold">Cordial</span>
               <span className="block text-xs text-neutral-500">Make plans, not pings.</span>
             </span>
           </button>

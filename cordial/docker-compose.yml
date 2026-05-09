@@ -1,7 +1,7 @@
 services:
   mongo:
     image: mongo:7
-    container_name: midline-mongo
+    container_name: cordial-mongo
     restart: unless-stopped
     ports:
       - "27017:27017"

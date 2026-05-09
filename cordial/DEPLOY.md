@@ -1,4 +1,4 @@
-# Deploy Midline
+# Deploy Cordial
 
 Recommended MVP deployment:
 
@@ -29,7 +29,7 @@ Create a Back4App Containers app from the GitHub repo:
 ```bash
 Repository: Enigma7484/Cordial
 Branch: main
-Root directory: midline/backend
+Root directory: cordial/backend
 Dockerfile: Dockerfile
 Plan: Free
 ```
@@ -37,10 +37,10 @@ Plan: Free
 Set environment variables:
 
 ```bash
-APP_NAME=Midline API
+APP_NAME=Cordial API
 ENV=production
 MONGODB_URI=mongodb+srv://...
-MONGODB_DB=midline
+MONGODB_DB=cordial
 JWT_SECRET=<long-random-string>
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=10080
@@ -54,7 +54,7 @@ SMTP_PORT=587
 SMTP_USERNAME=
 SMTP_PASSWORD=
 SMTP_FROM_EMAIL=
-SMTP_FROM_NAME=Midline
+SMTP_FROM_NAME=Cordial
 SMTP_USE_TLS=true
 ```
 
@@ -76,7 +76,7 @@ Create a Vercel project from the GitHub repo:
 
 ```bash
 Repository: Enigma7484/Cordial
-Root Directory: midline/frontend
+Root Directory: cordial/frontend
 Framework Preset: Vite
 Build Command: npm run build
 Output Directory: dist
@@ -109,14 +109,14 @@ The repo still includes a Render Blueprint at the repository root: `render.yaml`
 3. Render will detect `render.yaml`.
 4. Enter `MONGODB_URI` when prompted.
 5. Deploy both services:
-   - `midline-api`
-   - `midline-web`
+   - `cordial-api`
+   - `cordial-web`
 
 Expected URLs:
 
 ```bash
-Frontend: https://midline-web.onrender.com
-Backend:  https://midline-api.onrender.com
+Frontend: https://cordial-web.onrender.com
+Backend:  https://cordial-api.onrender.com
 ```
 
 If Render assigns different hostnames, update:

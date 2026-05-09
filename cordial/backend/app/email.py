@@ -24,7 +24,7 @@ def _send_email_sync(settings: Settings, to_email: str, subject: str, text: str)
 
 async def send_otp_email(settings: Settings, to_email: str, code: str) -> None:
     text = (
-        f"Your Midline sign-in code is {code}.\n\n"
+        f"Your Cordial sign-in code is {code}.\n\n"
         "It expires in 10 minutes. If you did not request this code, you can ignore this email."
     )
-    await to_thread.run_sync(_send_email_sync, settings, to_email, "Your Midline sign-in code", text)
+    await to_thread.run_sync(_send_email_sync, settings, to_email, "Your Cordial sign-in code", text)

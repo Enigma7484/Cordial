@@ -1,6 +1,6 @@
-# Midline MVP
+# Cordial MVP
 
-Midline is a lightweight networking app for students and early-career professionals: less formal than LinkedIn, more intentional than Instagram.
+Cordial is a lightweight networking app for students, early-career professionals, and community-driven events: less formal than LinkedIn, more intentional than Instagram, and natural beside Discord-style communities.
 
 ## Stack
 
@@ -11,7 +11,7 @@ Midline is a lightweight networking app for students and early-career profession
 
 ## Setup
 
-From `midline/`:
+From `cordial/`:
 
 ```bash
 docker compose up -d

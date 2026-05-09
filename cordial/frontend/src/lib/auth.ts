@@ -1,4 +1,4 @@
-const TOKEN_KEY = "midline_token";
+const TOKEN_KEY = "cordial_token";
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);

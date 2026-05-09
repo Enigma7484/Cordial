@@ -1,20 +1,20 @@
 services:
   - type: web
-    name: midline-api
+    name: cordial-api
     runtime: docker
-    dockerfilePath: midline/backend/Dockerfile
-    dockerContext: midline/backend
+    dockerfilePath: cordial/backend/Dockerfile
+    dockerContext: cordial/backend
     plan: free
     healthCheckPath: /health
     envVars:
       - key: APP_NAME
-        value: Midline API
+        value: Cordial API
       - key: ENV
         value: production
       - key: MONGODB_URI
         sync: false
       - key: MONGODB_DB
-        value: midline
+        value: cordial
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_ALGORITHM
@@ -22,7 +22,7 @@ services:
       - key: JWT_EXPIRE_MINUTES
         value: 10080
       - key: FRONTEND_ORIGINS
-        value: https://midline-web.onrender.com
+        value: https://cordial-web.onrender.com
       - key: SHOW_DEV_OTP
         value: true
       - key: OTP_REQUEST_LIMIT
@@ -42,19 +42,19 @@ services:
       - key: SMTP_FROM_EMAIL
         sync: false
       - key: SMTP_FROM_NAME
-        value: Midline
+        value: Cordial
       - key: SMTP_USE_TLS
         value: true
 
   - type: web
-    name: midline-web
+    name: cordial-web
     runtime: static
-    buildCommand: cd midline/frontend && npm ci && npm run build
-    staticPublishPath: midline/frontend/dist
+    buildCommand: cd cordial/frontend && npm ci && npm run build
+    staticPublishPath: cordial/frontend/dist
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://midline-api.onrender.com
+        value: https://cordial-api.onrender.com
