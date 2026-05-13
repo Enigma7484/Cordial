@@ -59,6 +59,8 @@ def public_user(user: dict | None) -> dict | None:
         "title": user.get("title", ""),
         "bio": user.get("bio", ""),
         "skills": user.get("skills", []),
+        "projects": user.get("projects", []),
+        "links": user.get("links", []),
         "interests": user.get("interests", []),
         "open_to": user.get("open_to", []),
     }

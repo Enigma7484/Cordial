@@ -28,6 +28,54 @@ async def my_events(current_user: dict = Depends(get_current_user)) -> list[dict
     return [await serialize_event(event) for event in events]
 
 
+@router.get("/{event_id}/recap")
+async def event_recap(event_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+    db = get_db()
+    event = await db.events.find_one({"_id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if current_user["_id"] not in event.get("attendees", []) and event.get("host_id") != current_user["_id"]:
+        raise HTTPException(status_code=403, detail="You are not part of this event")
+
+    attendee_ids = event.get("attendees", [])
+    connections = await db.connections.find(
+        {"$or": [{"user_a": current_user["_id"]}, {"user_b": current_user["_id"]}]}
+    ).to_list(length=100)
+    connected_ids = {
+        connection["user_b"] if connection["user_a"] == current_user["_id"] else connection["user_a"]
+        for connection in connections
+    }
+    event_connection_ids = [connection["_id"] for connection in connections if connection.get("event_id") == event_id]
+    followups = await db.followups.find({"connection_id": {"$in": event_connection_ids}}).to_list(length=100)
+    attendees = await db.users.find({"_id": {"$in": attendee_ids}}).to_list(length=100)
+    attendee_profiles = [public_user(user) for user in attendees if user["_id"] != current_user["_id"]]
+    not_connected = [user for user in attendee_profiles if user and user["id"] not in connected_ids]
+    open_followups = [followup for followup in followups if followup.get("status") == "open"]
+    completed_followups = [followup for followup in followups if followup.get("status") == "completed"]
+    attendee_terms = []
+    for user in attendee_profiles:
+        attendee_terms.extend((user or {}).get("skills", [])[:2])
+        attendee_terms.extend((user or {}).get("open_to", [])[:2])
+    suggested_actions = []
+    if not_connected:
+        suggested_actions.append(f"Connect with {len(not_connected)} attendee(s) you have not saved yet.")
+    if open_followups:
+        suggested_actions.append(f"Close the loop on {len(open_followups)} event follow-up(s).")
+    if not suggested_actions:
+        suggested_actions.append("Create one follow-up from the strongest conversation before the event goes cold.")
+
+    return {
+        "event": await serialize_event(event),
+        "attendees_seen": len(attendee_ids),
+        "connections_from_event": len(event_connection_ids),
+        "open_followups": len(open_followups),
+        "completed_followups": len(completed_followups),
+        "not_connected": not_connected[:8],
+        "top_terms": sorted(set(attendee_terms))[:10],
+        "suggested_actions": suggested_actions,
+    }
+
+
 @router.post("")
 async def create_event(payload: EventCreateIn, current_user: dict = Depends(get_current_user)) -> dict:
     db = get_db()

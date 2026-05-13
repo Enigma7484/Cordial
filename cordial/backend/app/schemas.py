@@ -87,3 +87,7 @@ class AskUpdateIn(BaseModel):
     type: Literal["ask", "offer"]
     text: str = Field(min_length=1, max_length=240)
     tags: list[str] = []
+
+
+class SignalReplyIn(BaseModel):
+    message: str = Field(default="", max_length=280)

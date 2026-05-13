@@ -6,10 +6,12 @@ import Home from "./pages/Home";
 import ProfilePage from "./pages/ProfilePage";
 import EventPage from "./pages/EventPage";
 import AsksPage from "./pages/AsksPage";
+import PublicProfilePage from "./pages/PublicProfilePage";
+import ConnectionPage from "./pages/ConnectionPage";
 import { api, Profile } from "./lib/api";
 import { clearToken, getToken } from "./lib/auth";
 
-type Page = "home" | "profile" | "events" | "asks";
+type Page = "home" | "profile" | "events" | "asks" | "connection";
 
 const nav = [
   { id: "home", label: "Home", icon: Sparkles },
@@ -21,8 +23,13 @@ const nav = [
 export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [page, setPage] = useState<Page>("home");
+  const [activeConnectionId, setActiveConnectionId] = useState("");
   const [loading, setLoading] = useState(Boolean(getToken()));
   const [dark, setDark] = useState(() => localStorage.getItem("cordial_theme") === "dark");
+  const [publicHandle, setPublicHandle] = useState(() => {
+    const match = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
+    return match?.[1] || "";
+  });
 
   async function loadProfile() {
     setLoading(true);
@@ -42,12 +49,25 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    function syncHash() {
+      const match = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
+      setPublicHandle(match?.[1] || "");
+    }
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("cordial_theme", dark ? "dark" : "light");
   }, [dark]);
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-sm">Loading Cordial...</div>;
+  }
+
+  if (publicHandle) {
+    return <PublicProfilePage handle={publicHandle} />;
   }
 
   if (!profile) {
@@ -84,10 +104,19 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 pb-24">
-        {page === "home" && <Home profile={profile} />}
+        {page === "home" && (
+          <Home
+            profile={profile}
+            onOpenConnection={(connectionId) => {
+              setActiveConnectionId(connectionId);
+              setPage("connection");
+            }}
+          />
+        )}
         {page === "profile" && <ProfilePage profile={profile} onSaved={setProfile} />}
         {page === "events" && <EventPage profile={profile} />}
         {page === "asks" && <AsksPage profile={profile} />}
+        {page === "connection" && activeConnectionId && <ConnectionPage connectionId={activeConnectionId} onBack={() => setPage("home")} />}
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-white md:hidden">

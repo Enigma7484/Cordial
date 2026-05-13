@@ -43,7 +43,7 @@ export type Profile = {
 
 export type PublicUser = Pick<
   Profile,
-  "id" | "name" | "handle" | "title" | "bio" | "skills" | "interests" | "open_to"
+  "id" | "name" | "handle" | "title" | "bio" | "skills" | "projects" | "links" | "interests" | "open_to"
 >;
 
 export type Connection = {
@@ -86,7 +86,57 @@ export type Ask = {
   type: "ask" | "offer";
   text: string;
   tags: string[];
+  reply_count?: number;
   created_at: string;
   user_id?: string;
   user?: { name: string; handle: string; title: string };
+};
+
+export type SignalReply = {
+  id: string;
+  ask_id: string;
+  ask_user_id: string;
+  responder_id: string;
+  connection_id: string;
+  followup_id?: string;
+  message: string;
+  status: "open" | "completed";
+  created_at: string;
+  ask?: Ask;
+  ask_user?: PublicUser;
+  responder?: PublicUser;
+};
+
+export type SignalMatch = {
+  user: PublicUser;
+  score: number;
+  reasons: string[];
+};
+
+export type ConnectionTimeline = {
+  connection: Connection;
+  other_user?: PublicUser;
+  open_followups: number;
+  completed_followups: number;
+  signal_reply_count: number;
+  next_action: string;
+  timeline: {
+    id: string;
+    type: "connection" | "event" | "followup" | "signal_reply";
+    title: string;
+    text: string;
+    status?: string;
+    created_at: string;
+  }[];
+};
+
+export type EventRecap = {
+  event: Event;
+  attendees_seen: number;
+  connections_from_event: number;
+  open_followups: number;
+  completed_followups: number;
+  not_connected: PublicUser[];
+  top_terms: string[];
+  suggested_actions: string[];
 };

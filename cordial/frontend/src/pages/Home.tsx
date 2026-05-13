@@ -1,13 +1,37 @@
-import { CalendarPlus, Check, Handshake, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { CalendarPlus, Check, Clock3, Handshake, Pencil, Plus, RotateCcw, Sparkles, Target, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { api, Connection, Event, Followup, Profile } from "../lib/api";
+import { api, Ask, Connection, ConnectionTimeline, Event, Followup, Profile, SignalReply } from "../lib/api";
 
-export default function Home({ profile }: { profile: Profile }) {
+function profileStrength(profile: Profile) {
+  const checks = [
+    Boolean(profile.name),
+    Boolean(profile.title),
+    Boolean(profile.bio),
+    profile.skills?.length >= 3,
+    profile.open_to?.length >= 2,
+    profile.interests?.length >= 2,
+    profile.projects?.length > 0,
+    profile.links?.length > 0,
+  ];
+  const score = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  const missing = [
+    !profile.title && "title",
+    !profile.bio && "bio",
+    !(profile.skills?.length >= 3) && "3 skills",
+    !(profile.open_to?.length >= 2) && "open-to tags",
+    !(profile.projects?.length > 0) && "featured project",
+  ].filter(Boolean) as string[];
+  return { score, missing };
+}
+
+export default function Home({ profile, onOpenConnection }: { profile: Profile; onOpenConnection: (connectionId: string) => void }) {
   const [handle, setHandle] = useState("");
   const [note, setNote] = useState("");
   const [eventId, setEventId] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [asks, setAsks] = useState<Ask[]>([]);
+  const [signalReplies, setSignalReplies] = useState<SignalReply[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [followupText, setFollowupText] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -15,6 +39,7 @@ export default function Home({ profile }: { profile: Profile }) {
   const [editingText, setEditingText] = useState("");
   const [editingDueDate, setEditingDueDate] = useState("");
   const [followups, setFollowups] = useState<Followup[]>([]);
+  const [connectionTimeline, setConnectionTimeline] = useState<ConnectionTimeline | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -23,18 +48,32 @@ export default function Home({ profile }: { profile: Profile }) {
   const selectedConnection = connections.find((item) => item.id === selectedConnectionId) || null;
   const openFollowups = followups.filter((item) => item.status === "open");
   const completedFollowups = followups.filter((item) => item.status === "completed");
+  const strength = profileStrength(profile);
+  const todaysFollowups = openFollowups.filter((item) => !item.due_date || new Date(item.due_date) <= new Date(Date.now() + 1000 * 60 * 60 * 24));
+  const suggestedSignals = asks
+    .filter((ask) => ask.user_id !== profile.id)
+    .filter((ask) => {
+      const tags = ask.tags.map((tag) => tag.toLowerCase());
+      const mine = [...(profile.skills || []), ...(profile.open_to || []), ...(profile.interests || [])].map((tag) => tag.toLowerCase());
+      return tags.some((tag) => mine.some((item) => item.includes(tag) || tag.includes(item)));
+    })
+    .slice(0, 3);
 
   async function loadDashboard() {
     setError("");
     try {
-      const [connectionRows, followupRows, eventRows] = await Promise.all([
+      const [connectionRows, followupRows, eventRows, askRows, replyRows] = await Promise.all([
         api<Connection[]>("/connections/mine"),
         api<Followup[]>("/followups/mine"),
         api<Event[]>("/events/mine"),
+        api<Ask[]>("/asks"),
+        api<SignalReply[]>("/asks/replies/mine"),
       ]);
       setConnections(connectionRows);
       setFollowups(followupRows);
       setEvents(eventRows);
+      setAsks(askRows);
+      setSignalReplies(replyRows);
       if (!selectedConnectionId && connectionRows[0]) {
         setSelectedConnectionId(connectionRows[0].id);
       }
@@ -48,6 +87,21 @@ export default function Home({ profile }: { profile: Profile }) {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    async function loadTimeline() {
+      if (!selectedConnectionId) {
+        setConnectionTimeline(null);
+        return;
+      }
+      try {
+        setConnectionTimeline(await api<ConnectionTimeline>(`/connections/${selectedConnectionId}/timeline`));
+      } catch {
+        setConnectionTimeline(null);
+      }
+    }
+    loadTimeline();
+  }, [selectedConnectionId, followups.length]);
 
   async function connect(event: FormEvent) {
     event.preventDefault();
@@ -155,6 +209,63 @@ export default function Home({ profile }: { profile: Profile }) {
           <p className="mt-2 max-w-xl text-neutral-600">Keep the conversation warm after the room clears.</p>
         </div>
 
+        <section className="panel">
+          <div className="flex items-center gap-2">
+            <Target size={18} />
+            <h2 className="font-bold">Command Center</h2>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-line p-3">
+              <p className="text-2xl font-black">{todaysFollowups.length}</p>
+              <p className="text-xs text-neutral-500">due or unscheduled</p>
+            </div>
+            <div className="rounded-lg border border-line p-3">
+              <p className="text-2xl font-black">{signalReplies.length}</p>
+              <p className="text-xs text-neutral-500">signal replies</p>
+            </div>
+            <div className="rounded-lg border border-line p-3">
+              <p className="text-2xl font-black">{events.length}</p>
+              <p className="text-xs text-neutral-500">active events</p>
+            </div>
+            <div className="rounded-lg border border-line p-3">
+              <p className="text-2xl font-black">{strength.score}%</p>
+              <p className="text-xs text-neutral-500">profile strength</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-blue/30 bg-mint/60 p-3">
+              <p className="text-sm font-bold">Nudge</p>
+              <p className="mt-1 text-sm text-neutral-600">
+                {todaysFollowups[0]?.text ||
+                  signalReplies[0]?.message ||
+                  suggestedSignals[0]?.text ||
+                  "Post a signal or add one follow-up to create your next warm path."}
+              </p>
+            </div>
+            <div className="rounded-lg border border-line p-3">
+              <p className="text-sm font-bold">Profile polish</p>
+              <p className="mt-1 text-sm text-neutral-600">
+                {strength.missing.length ? `Add ${strength.missing.slice(0, 3).join(", ")} to look sharper.` : "Profile is pitch-ready."}
+              </p>
+            </div>
+          </div>
+          {suggestedSignals.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-bold">Signals you can act on</p>
+              <div className="mt-2 grid gap-2">
+                {suggestedSignals.map((ask) => (
+                  <div key={ask.id} className="rounded-lg border border-line p-3">
+                    <p className="text-sm font-semibold">{ask.text}</p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      @{ask.user?.handle} - {ask.tags.join(", ")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
         <form onSubmit={connect} className="panel space-y-3">
           <div className="flex items-center gap-2">
             <Handshake size={18} />
@@ -241,6 +352,64 @@ export default function Home({ profile }: { profile: Profile }) {
       </section>
 
       <section className="panel h-fit">
+        {selectedConnection && (
+          <div className="mb-5 border-b border-line pb-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="label">Relationship snapshot</p>
+                <h2 className="mt-1 text-xl font-black">@{selectedConnection.other_user?.handle}</h2>
+                <p className="mt-1 text-sm text-neutral-600">{selectedConnection.other_user?.title || "No title yet"}</p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <span className="rounded-full border border-line px-3 py-1 text-xs text-neutral-500">
+                  {connectionTimeline?.timeline.length || 1} touchpoint(s)
+                </span>
+                <button className="btn-soft !h-8 !min-h-8 !px-2 text-xs" onClick={() => onOpenConnection(selectedConnection.id)} type="button">
+                  Open detail
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              <div className="rounded-lg border border-line p-3">
+                <p className="text-2xl font-black">{connectionTimeline?.open_followups || 0}</p>
+                <p className="text-xs text-neutral-500">open follow-ups</p>
+              </div>
+              <div className="rounded-lg border border-line p-3">
+                <p className="text-2xl font-black">{connectionTimeline?.completed_followups || 0}</p>
+                <p className="text-xs text-neutral-500">completed</p>
+              </div>
+              <div className="rounded-lg border border-line p-3">
+                <p className="text-2xl font-black">{connectionTimeline?.signal_reply_count || 0}</p>
+                <p className="text-xs text-neutral-500">signal replies</p>
+              </div>
+            </div>
+            <div className="mt-4 rounded-lg border border-blue/30 bg-mint/60 p-3">
+              <div className="flex items-start gap-2">
+                <Sparkles className="mt-0.5 text-blue" size={16} />
+                <div>
+                  <p className="text-sm font-bold">Next best move</p>
+                  <p className="mt-1 text-sm text-neutral-600">
+                    {connectionTimeline?.next_action || "Add one specific follow-up so this connection has somewhere to go."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {connectionTimeline?.timeline.length ? (
+              <div className="mt-4 space-y-2">
+                {connectionTimeline.timeline.slice(0, 4).map((item) => (
+                  <div key={item.id} className="flex gap-3 rounded-lg border border-line p-3">
+                    <Clock3 className="mt-0.5 shrink-0 text-blue" size={15} />
+                    <div>
+                      <p className="text-sm font-semibold">{item.title}</p>
+                      {item.text && <p className="mt-1 text-xs text-neutral-500">{item.text}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-bold">My follow-ups</h2>
           <span className="rounded-full border border-line px-3 py-1 text-xs text-neutral-500">{openFollowups.length} open</span>

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-dev"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
-    frontend_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    frontend_origins: str = "http://localhost:5174,http://127.0.0.1:5174"
     show_dev_otp: bool = True
     otp_request_limit: int = 5
     otp_verify_limit: int = 10
@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
     smtp_from_name: str = "Cordial"
     smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -30,9 +31,17 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.frontend_origins.split(",") if origin.strip()]
 
+    @property
+    def cors_origin_regex(self) -> str | None:
+        if self.env != "development":
+            return None
+        return r"https?://(localhost|127\.0\.0\.1):\d+"
+
     def validate_runtime(self) -> None:
         if self.env == "production" and self.jwt_secret == "change-me-in-dev":
             raise ValueError("JWT_SECRET must be set to a strong value in production")
+        if self.env == "production" and not self.show_dev_otp and not self.smtp_enabled:
+            raise ValueError("SMTP settings are required in production when SHOW_DEV_OTP is false")
 
     @property
     def smtp_enabled(self) -> bool:

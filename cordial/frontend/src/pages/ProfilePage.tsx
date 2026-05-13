@@ -1,3 +1,5 @@
+import { Copy, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import ProfileForm from "../components/ProfileForm";
 import { Profile } from "../lib/api";
 
@@ -13,15 +15,70 @@ function Tags({ items }: { items: string[] }) {
   );
 }
 
+function strength(profile: Profile) {
+  const checks = [
+    Boolean(profile.title),
+    Boolean(profile.bio),
+    profile.skills?.length >= 3,
+    profile.open_to?.length >= 2,
+    profile.interests?.length >= 2,
+    profile.projects?.length > 0,
+    profile.links?.length > 0,
+  ];
+  const score = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  const missing = [
+    !profile.title && "title",
+    !profile.bio && "bio",
+    !(profile.skills?.length >= 3) && "three skills",
+    !(profile.open_to?.length >= 2) && "open-to tags",
+    !(profile.projects?.length > 0) && "featured project",
+  ].filter(Boolean) as string[];
+  return { score, missing };
+}
+
 export default function ProfilePage({ profile, onSaved }: { profile: Profile; onSaved: (profile: Profile) => void }) {
+  const [shareMessage, setShareMessage] = useState("");
+  const publicUrl = `${window.location.origin}${window.location.pathname}#/u/${profile.handle}`;
+  const profileStrength = strength(profile);
+
+  async function copyShareUrl() {
+    await navigator.clipboard.writeText(publicUrl);
+    setShareMessage("Public profile link copied.");
+  }
+
   return (
     <div className="grid gap-5 md:ml-52">
       <section>
         <h1 className="text-3xl font-black tracking-normal">Profile</h1>
         <p className="mt-2 text-neutral-600">One identity, two modes: crisp when it matters, human all the time.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={copyShareUrl} type="button">
+            <Copy size={14} />
+            Copy public profile
+          </button>
+          <a className="btn-soft !h-9 !min-h-9 !px-3" href={`#/u/${profile.handle}`} target="_blank" rel="noreferrer">
+            <ExternalLink size={14} />
+            Preview
+          </a>
+        </div>
+        {shareMessage && <p className="mt-2 text-sm text-neutral-600">{shareMessage}</p>}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
+        <div className="panel lg:col-span-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="label">Profile strength</p>
+              <h2 className="mt-1 text-2xl font-black">{profileStrength.score}% ready</h2>
+              <p className="mt-1 text-sm text-neutral-600">
+                {profileStrength.missing.length ? `Add ${profileStrength.missing.join(", ")} before sharing widely.` : "Strong enough to share after a real conversation."}
+              </p>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-paper sm:w-64">
+              <div className="h-full rounded-full bg-coral" style={{ width: `${profileStrength.score}%` }} />
+            </div>
+          </div>
+        </div>
         <div className="panel">
           <p className="label">Formal</p>
           <h2 className="mt-2 text-2xl font-black">{profile.name}</h2>

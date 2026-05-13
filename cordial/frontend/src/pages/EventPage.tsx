@@ -1,6 +1,6 @@
 import { Pencil, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { api, Event, Profile } from "../lib/api";
+import { api, Event, EventRecap, Profile } from "../lib/api";
 
 export default function EventPage({ profile }: { profile: Profile }) {
   const [name, setName] = useState("");
@@ -10,6 +10,7 @@ export default function EventPage({ profile }: { profile: Profile }) {
   const [connectingHandle, setConnectingHandle] = useState("");
   const [connectNote, setConnectNote] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
+  const [recap, setRecap] = useState<EventRecap | null>(null);
   const [activeEventId, setActiveEventId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -148,6 +149,15 @@ export default function EventPage({ profile }: { profile: Profile }) {
     }
   }
 
+  async function loadRecap(event: Event) {
+    setError("");
+    try {
+      setRecap(await api<EventRecap>(`/events/${event.id}/recap`));
+    } catch (recapError) {
+      setError(recapError instanceof Error ? recapError.message : "Could not load event recap");
+    }
+  }
+
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-2">
       <section>
@@ -210,6 +220,9 @@ export default function EventPage({ profile }: { profile: Profile }) {
               </p>
               <p className="mt-3 text-sm text-neutral-500">{activeEvent.attendees.length} attendee(s)</p>
               <div className="mt-4 flex gap-2">
+                <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => loadRecap(activeEvent)} type="button">
+                  Recap
+                </button>
                 {isHost ? (
                   <button className="btn-soft !h-9 !min-h-9 !px-3 text-coral" onClick={() => deleteEvent(activeEvent)}>
                     <Trash2 size={14} />
@@ -237,6 +250,7 @@ export default function EventPage({ profile }: { profile: Profile }) {
                       <div>
                         <p className="text-sm font-semibold">{user.name}</p>
                         <p className="text-xs text-neutral-500">@{user.handle}</p>
+                        {user.title && <p className="mt-1 text-xs text-neutral-500">{user.title}</p>}
                       </div>
                       {user.id !== profile.id && (
                         <button
@@ -248,11 +262,60 @@ export default function EventPage({ profile }: { profile: Profile }) {
                         </button>
                       )}
                     </div>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {[...(user.open_to || []), ...(user.skills || [])].slice(0, 4).map((tag) => (
+                        <span key={tag} className="rounded-full border border-line px-2 py-0.5 text-[11px] text-neutral-600">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
+          {recap?.event.id === activeEvent.id && (
+            <div className="mt-5 border-t border-line pt-5">
+              <div className="grid gap-3 md:grid-cols-4">
+                <div className="rounded-lg border border-line p-3">
+                  <p className="text-2xl font-black">{recap.attendees_seen}</p>
+                  <p className="text-xs text-neutral-500">attendees</p>
+                </div>
+                <div className="rounded-lg border border-line p-3">
+                  <p className="text-2xl font-black">{recap.connections_from_event}</p>
+                  <p className="text-xs text-neutral-500">event connects</p>
+                </div>
+                <div className="rounded-lg border border-line p-3">
+                  <p className="text-2xl font-black">{recap.open_followups}</p>
+                  <p className="text-xs text-neutral-500">open follow-ups</p>
+                </div>
+                <div className="rounded-lg border border-line p-3">
+                  <p className="text-2xl font-black">{recap.not_connected.length}</p>
+                  <p className="text-xs text-neutral-500">not connected</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-blue/30 bg-mint/60 p-3">
+                  <p className="text-sm font-bold">Suggested next actions</p>
+                  <ul className="mt-2 space-y-1 text-sm text-neutral-600">
+                    {recap.suggested_actions.map((action) => (
+                      <li key={action}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-lg border border-line p-3">
+                  <p className="text-sm font-bold">Room energy</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {recap.top_terms.map((term) => (
+                      <span key={term} className="rounded-full border border-line px-2 py-1 text-xs text-neutral-600">
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
