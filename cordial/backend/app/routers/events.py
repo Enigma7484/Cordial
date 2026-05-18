@@ -14,6 +14,13 @@ router = APIRouter(prefix="/events", tags=["events"])
 async def serialize_event(event: dict) -> dict:
     db = get_db()
     item = serialize_doc(event)
+    item.setdefault("description", "")
+    item.setdefault("location", "")
+    item.setdefault("starts_at", None)
+    item.setdefault("ends_at", None)
+    item.setdefault("event_url", "")
+    item.setdefault("host_note", "")
+    item.setdefault("links", [])
     attendees = await db.users.find({"_id": {"$in": event.get("attendees", [])}}).to_list(length=100)
     item["attendee_profiles"] = [public_user(user) for user in attendees]
     return item
@@ -83,6 +90,13 @@ async def create_event(payload: EventCreateIn, current_user: dict = Depends(get_
         event = {
             "_id": str(uuid4()),
             "name": payload.name,
+            "description": payload.description,
+            "location": payload.location,
+            "starts_at": payload.starts_at,
+            "ends_at": payload.ends_at,
+            "event_url": payload.event_url,
+            "host_note": payload.host_note,
+            "links": [link.model_dump() for link in payload.links],
             "code": make_event_code(),
             "host_id": current_user["_id"],
             "attendees": [current_user["_id"]],
@@ -124,7 +138,19 @@ async def update_event(
 
     await db.events.update_one(
         {"_id": event_id},
-        {"$set": {"name": payload.name, "updated_at": now_utc()}},
+        {
+            "$set": {
+                "name": payload.name,
+                "description": payload.description,
+                "location": payload.location,
+                "starts_at": payload.starts_at,
+                "ends_at": payload.ends_at,
+                "event_url": payload.event_url,
+                "host_note": payload.host_note,
+                "links": [link.model_dump() for link in payload.links],
+                "updated_at": now_utc(),
+            }
+        },
     )
     updated = await db.events.find_one({"_id": event_id})
     return await serialize_event(updated)

@@ -74,6 +74,13 @@ export type Followup = {
 export type Event = {
   id: string;
   name: string;
+  description: string;
+  location: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  event_url: string;
+  host_note: string;
+  links: { label: string; url: string }[];
   code: string;
   host_id: string;
   attendees: string[];

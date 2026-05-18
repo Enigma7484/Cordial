@@ -1,11 +1,69 @@
-import { Pencil, Trash2, X } from "lucide-react";
+import { Calendar, ExternalLink, Link as LinkIcon, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { api, Event, EventRecap, Profile } from "../lib/api";
 
+type EventLink = { label: string; url: string };
+type EventForm = {
+  name: string;
+  description: string;
+  location: string;
+  starts_at: string;
+  ends_at: string;
+  event_url: string;
+  host_note: string;
+  links: EventLink[];
+};
+
+function blankForm(): EventForm {
+  return {
+    name: "",
+    description: "",
+    location: "",
+    starts_at: "",
+    ends_at: "",
+    event_url: "",
+    host_note: "",
+    links: [{ label: "", url: "" }],
+  };
+}
+
+function formFromEvent(event: Event): EventForm {
+  return {
+    name: event.name || "",
+    description: event.description || "",
+    location: event.location || "",
+    starts_at: event.starts_at ? event.starts_at.slice(0, 16) : "",
+    ends_at: event.ends_at ? event.ends_at.slice(0, 16) : "",
+    event_url: event.event_url || "",
+    host_note: event.host_note || "",
+    links: event.links?.length ? event.links : [{ label: "", url: "" }],
+  };
+}
+
+function payloadFromForm(form: EventForm) {
+  return {
+    name: form.name.trim(),
+    description: form.description.trim(),
+    location: form.location.trim(),
+    starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+    ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+    event_url: form.event_url.trim(),
+    host_note: form.host_note.trim(),
+    links: form.links
+      .map((link) => ({ label: link.label.trim() || "Link", url: link.url.trim() }))
+      .filter((link) => link.url),
+  };
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "";
+  return new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 export default function EventPage({ profile }: { profile: Profile }) {
-  const [name, setName] = useState("");
+  const [form, setForm] = useState<EventForm>(blankForm());
   const [joinCode, setJoinCode] = useState("");
-  const [editingName, setEditingName] = useState("");
+  const [editingForm, setEditingForm] = useState<EventForm>(blankForm());
   const [editingEventId, setEditingEventId] = useState("");
   const [connectingHandle, setConnectingHandle] = useState("");
   const [connectNote, setConnectNote] = useState("");
@@ -25,9 +83,7 @@ export default function EventPage({ profile }: { profile: Profile }) {
     try {
       const rows = await api<Event[]>("/events/mine");
       setEvents(rows);
-      if (!activeEventId && rows[0]) {
-        setActiveEventId(rows[0].id);
-      }
+      if (!activeEventId && rows[0]) setActiveEventId(rows[0].id);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load events");
     } finally {
@@ -47,18 +103,44 @@ export default function EventPage({ profile }: { profile: Profile }) {
     setActiveEventId(event.id);
   }
 
+  function updateForm(key: keyof EventForm, value: string) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateEditingForm(key: keyof EventForm, value: string) {
+    setEditingForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateLink(index: number, key: keyof EventLink, value: string, editing = false) {
+    const setter = editing ? setEditingForm : setForm;
+    setter((current) => ({
+      ...current,
+      links: current.links.map((link, itemIndex) => (itemIndex === index ? { ...link, [key]: value } : link)),
+    }));
+  }
+
+  function addLink(editing = false) {
+    const setter = editing ? setEditingForm : setForm;
+    setter((current) => ({ ...current, links: [...current.links, { label: "", url: "" }] }));
+  }
+
+  function removeLink(index: number, editing = false) {
+    const setter = editing ? setEditingForm : setForm;
+    setter((current) => ({ ...current, links: current.links.filter((_, itemIndex) => itemIndex !== index) }));
+  }
+
   async function createEvent(e: FormEvent) {
     e.preventDefault();
     setMessage("");
     setError("");
     setBusy(true);
     try {
-      const res = await api<Event>("/events", { method: "POST", body: JSON.stringify({ name }) });
+      const res = await api<Event>("/events", { method: "POST", body: JSON.stringify(payloadFromForm(form)) });
       upsertEvent(res);
-      setName("");
+      setForm(blankForm());
       setMessage(`Created ${res.name}.`);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not create event");
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : "Could not create event");
     } finally {
       setBusy(false);
     }
@@ -74,8 +156,8 @@ export default function EventPage({ profile }: { profile: Profile }) {
       upsertEvent(res);
       setJoinCode("");
       setMessage(`Joined ${res.name}.`);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not join event");
+    } catch (joinError) {
+      setError(joinError instanceof Error ? joinError.message : "Could not join event");
     } finally {
       setBusy(false);
     }
@@ -83,7 +165,7 @@ export default function EventPage({ profile }: { profile: Profile }) {
 
   function startEditingEvent(event: Event) {
     setEditingEventId(event.id);
-    setEditingName(event.name);
+    setEditingForm(formFromEvent(event));
     setError("");
   }
 
@@ -92,11 +174,10 @@ export default function EventPage({ profile }: { profile: Profile }) {
     try {
       const updated = await api<Event>(`/events/${event.id}`, {
         method: "PUT",
-        body: JSON.stringify({ name: editingName }),
+        body: JSON.stringify(payloadFromForm(editingForm)),
       });
       upsertEvent(updated);
       setEditingEventId("");
-      setEditingName("");
     } catch (editError) {
       setError(editError instanceof Error ? editError.message : "Could not edit event");
     }
@@ -158,22 +239,85 @@ export default function EventPage({ profile }: { profile: Profile }) {
     }
   }
 
+  function EventFields({
+    value,
+    editing = false,
+  }: {
+    value: EventForm;
+    editing?: boolean;
+  }) {
+    const update = editing ? updateEditingForm : updateForm;
+    return (
+      <div className="space-y-3">
+        <input className="input" value={value.name} onChange={(e) => update("name", e.target.value)} placeholder="Founder coffee chat" required />
+        <textarea
+          className="input min-h-24"
+          value={value.description}
+          onChange={(e) => update("description", e.target.value)}
+          placeholder="What is happening, who should come, and what people should expect."
+        />
+        <div className="grid gap-3 md:grid-cols-2">
+          <input className="input" value={value.location} onChange={(e) => update("location", e.target.value)} placeholder="Location or room" />
+          <input className="input" value={value.event_url} onChange={(e) => update("event_url", e.target.value)} placeholder="Event/registration link" />
+          <div>
+            <label className="label">Starts</label>
+            <input className="input mt-1" type="datetime-local" value={value.starts_at} onChange={(e) => update("starts_at", e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Ends</label>
+            <input className="input mt-1" type="datetime-local" value={value.ends_at} onChange={(e) => update("ends_at", e.target.value)} />
+          </div>
+        </div>
+        <textarea
+          className="input min-h-20"
+          value={value.host_note}
+          onChange={(e) => update("host_note", e.target.value)}
+          placeholder="Host note: what to bring, icebreakers, speaker info, follow-up instructions..."
+        />
+        <div className="rounded-lg border border-line p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold">Useful links</p>
+            <button className="btn-soft !h-8 !min-h-8 !px-2" type="button" onClick={() => addLink(editing)}>
+              <Plus size={14} />
+            </button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {value.links.map((link, index) => (
+              <div key={index} className="grid gap-2 md:grid-cols-[1fr_2fr_auto]">
+                <input className="input" value={link.label} onChange={(e) => updateLink(index, "label", e.target.value, editing)} placeholder="Agenda" />
+                <input className="input" value={link.url} onChange={(e) => updateLink(index, "url", e.target.value, editing)} placeholder="https://..." />
+                <button
+                  className="btn-soft !h-10 !min-h-10 !px-3"
+                  type="button"
+                  onClick={() => removeLink(index, editing)}
+                  disabled={value.links.length === 1}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-2">
       <section>
         <h1 className="text-3xl font-black tracking-normal">Event Mode</h1>
-        <p className="mt-2 text-neutral-600">Spin up a room code for talks, mixers, club nights, and recruiting tables.</p>
+        <p className="mt-2 text-neutral-600">Set up the room, share context, and turn attendees into warm follow-ups.</p>
       </section>
 
       <section className="panel md:col-start-1">
         <form onSubmit={createEvent} className="space-y-3">
           <h2 className="font-bold">Create event</h2>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Founder coffee chat" required />
-          <button className="btn-primary w-full" disabled={busy}>Create code</button>
+          <EventFields value={form} />
+          <button className="btn-primary w-full" disabled={busy}>Create event code</button>
         </form>
       </section>
 
-      <section className="panel">
+      <section className="panel h-fit">
         <form onSubmit={joinEvent} className="space-y-3">
           <h2 className="font-bold">Join event</h2>
           <input
@@ -192,129 +336,141 @@ export default function EventPage({ profile }: { profile: Profile }) {
 
       {activeEvent && (
         <section className="panel md:col-span-2">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="label">Active event</p>
-              {editingEventId === activeEvent.id ? (
-                <div className="mt-2 flex max-w-md gap-2">
-                  <input className="input" value={editingName} onChange={(event) => setEditingName(event.target.value)} />
-                  <button className="btn-primary !h-10 !min-h-10 !px-3" onClick={() => saveEventEdit(activeEvent)} type="button">
-                    Save
-                  </button>
-                  <button className="btn-soft !h-10 !min-h-10 !px-3" onClick={() => setEditingEventId("")} type="button">
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-2 flex items-center gap-2">
-                  <h2 className="text-2xl font-black">{activeEvent.name}</h2>
-                  {isHost && (
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => startEditingEvent(activeEvent)} title="Rename event">
-                      <Pencil size={14} />
-                    </button>
-                  )}
-                </div>
-              )}
-              <p className="mt-3 inline-flex rounded-lg bg-ink px-4 py-2 font-mono text-2xl font-black tracking-widest text-white">
-                {activeEvent.code}
-              </p>
-              <p className="mt-3 text-sm text-neutral-500">{activeEvent.attendees.length} attendee(s)</p>
-              <div className="mt-4 flex gap-2">
-                <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => loadRecap(activeEvent)} type="button">
-                  Recap
+          {editingEventId === activeEvent.id ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold">Edit event setup</h2>
+                <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => setEditingEventId("")} type="button">
+                  <X size={14} />
                 </button>
-                {isHost ? (
-                  <button className="btn-soft !h-9 !min-h-9 !px-3 text-coral" onClick={() => deleteEvent(activeEvent)}>
-                    <Trash2 size={14} />
-                    Delete event
-                  </button>
-                ) : (
-                  <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => leaveEvent(activeEvent)}>
-                    Leave event
-                  </button>
-                )}
               </div>
+              <EventFields value={editingForm} editing />
+              <button className="btn-primary w-full" onClick={() => saveEventEdit(activeEvent)} type="button">
+                Save event
+              </button>
             </div>
-            <div className="min-w-48">
-              <p className="text-sm font-bold">Attendees</p>
-              <input
-                className="input mt-2"
-                value={connectNote}
-                onChange={(event) => setConnectNote(event.target.value)}
-                placeholder="Optional connection note"
-              />
-              <div className="mt-2 space-y-2">
-                {(activeEvent.attendee_profiles || []).map((user) => (
-                  <div key={user.id} className="rounded-lg border border-line p-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold">{user.name}</p>
-                        <p className="text-xs text-neutral-500">@{user.handle}</p>
-                        {user.title && <p className="mt-1 text-xs text-neutral-500">{user.title}</p>}
-                      </div>
-                      {user.id !== profile.id && (
-                        <button
-                          className="btn-soft !h-8 !min-h-8 !px-2"
-                          onClick={() => connectFromEvent(user.handle, activeEvent)}
-                          disabled={connectingHandle === user.handle}
-                        >
-                          Connect
-                        </button>
-                      )}
+          ) : (
+            <>
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="label">Active event</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <h2 className="text-3xl font-black tracking-normal">{activeEvent.name}</h2>
+                    {isHost && (
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => startEditingEvent(activeEvent)} title="Edit event">
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {activeEvent.description && <p className="mt-3 text-sm leading-6 text-neutral-600">{activeEvent.description}</p>}
+                  <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-600">
+                    {activeEvent.location && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1">
+                        <MapPin size={14} />
+                        {activeEvent.location}
+                      </span>
+                    )}
+                    {(activeEvent.starts_at || activeEvent.ends_at) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1">
+                        <Calendar size={14} />
+                        {formatDate(activeEvent.starts_at)}
+                        {activeEvent.ends_at ? ` - ${formatDate(activeEvent.ends_at)}` : ""}
+                      </span>
+                    )}
+                    {activeEvent.event_url && (
+                      <a className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 font-semibold text-blue" href={activeEvent.event_url} target="_blank" rel="noreferrer">
+                        <ExternalLink size={14} />
+                        Event link
+                      </a>
+                    )}
+                  </div>
+                  {activeEvent.host_note && (
+                    <div className="mt-4 rounded-lg border border-blue/30 bg-mint/60 p-3">
+                      <p className="text-sm font-bold">Host note</p>
+                      <p className="mt-1 text-sm text-neutral-600">{activeEvent.host_note}</p>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {[...(user.open_to || []), ...(user.skills || [])].slice(0, 4).map((tag) => (
-                        <span key={tag} className="rounded-full border border-line px-2 py-0.5 text-[11px] text-neutral-600">
-                          {tag}
-                        </span>
+                  )}
+                  {activeEvent.links?.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {activeEvent.links.map((link, index) => (
+                        <a key={`${link.url}-${index}`} className="btn-soft !h-9 !min-h-9 !px-3" href={link.url} target="_blank" rel="noreferrer">
+                          <LinkIcon size={14} />
+                          {link.label || "Link"}
+                        </a>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {recap?.event.id === activeEvent.id && (
-            <div className="mt-5 border-t border-line pt-5">
-              <div className="grid gap-3 md:grid-cols-4">
-                <div className="rounded-lg border border-line p-3">
-                  <p className="text-2xl font-black">{recap.attendees_seen}</p>
-                  <p className="text-xs text-neutral-500">attendees</p>
-                </div>
-                <div className="rounded-lg border border-line p-3">
-                  <p className="text-2xl font-black">{recap.connections_from_event}</p>
-                  <p className="text-xs text-neutral-500">event connects</p>
-                </div>
-                <div className="rounded-lg border border-line p-3">
-                  <p className="text-2xl font-black">{recap.open_followups}</p>
-                  <p className="text-xs text-neutral-500">open follow-ups</p>
-                </div>
-                <div className="rounded-lg border border-line p-3">
-                  <p className="text-2xl font-black">{recap.not_connected.length}</p>
-                  <p className="text-xs text-neutral-500">not connected</p>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div className="rounded-lg border border-blue/30 bg-mint/60 p-3">
-                  <p className="text-sm font-bold">Suggested next actions</p>
-                  <ul className="mt-2 space-y-1 text-sm text-neutral-600">
-                    {recap.suggested_actions.map((action) => (
-                      <li key={action}>{action}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="rounded-lg border border-line p-3">
-                  <p className="text-sm font-bold">Room energy</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {recap.top_terms.map((term) => (
-                      <span key={term} className="rounded-full border border-line px-2 py-1 text-xs text-neutral-600">
-                        {term}
-                      </span>
-                    ))}
+                  )}
+                  <p className="mt-5 inline-flex rounded-lg bg-ink px-4 py-2 font-mono text-2xl font-black tracking-widest text-white">
+                    {activeEvent.code}
+                  </p>
+                  <p className="mt-3 text-sm text-neutral-500">{activeEvent.attendees.length} attendee(s)</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => loadRecap(activeEvent)} type="button">
+                      Recap
+                    </button>
+                    {isHost ? (
+                      <button className="btn-soft !h-9 !min-h-9 !px-3 text-coral" onClick={() => deleteEvent(activeEvent)}>
+                        <Trash2 size={14} />
+                        Delete event
+                      </button>
+                    ) : (
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => leaveEvent(activeEvent)}>
+                        Leave event
+                      </button>
+                    )}
                   </div>
                 </div>
+                <div className="min-w-64">
+                  <p className="text-sm font-bold">Attendees</p>
+                  <input className="input mt-2" value={connectNote} onChange={(event) => setConnectNote(event.target.value)} placeholder="Optional connection note" />
+                  <div className="mt-2 space-y-2">
+                    {(activeEvent.attendee_profiles || []).map((user) => (
+                      <div key={user.id} className="rounded-lg border border-line p-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{user.name}</p>
+                            <p className="text-xs text-neutral-500">@{user.handle}</p>
+                            {user.title && <p className="mt-1 text-xs text-neutral-500">{user.title}</p>}
+                          </div>
+                          {user.id !== profile.id && (
+                            <button className="btn-soft !h-8 !min-h-8 !px-2" onClick={() => connectFromEvent(user.handle, activeEvent)} disabled={connectingHandle === user.handle}>
+                              Connect
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {[...(user.open_to || []), ...(user.skills || [])].slice(0, 4).map((tag) => (
+                            <span key={tag} className="rounded-full border border-line px-2 py-0.5 text-[11px] text-neutral-600">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+              {recap?.event.id === activeEvent.id && (
+                <div className="mt-5 border-t border-line pt-5">
+                  <div className="grid gap-3 md:grid-cols-4">
+                    <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.attendees_seen}</p><p className="text-xs text-neutral-500">attendees</p></div>
+                    <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.connections_from_event}</p><p className="text-xs text-neutral-500">event connects</p></div>
+                    <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.open_followups}</p><p className="text-xs text-neutral-500">open follow-ups</p></div>
+                    <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.not_connected.length}</p><p className="text-xs text-neutral-500">not connected</p></div>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-lg border border-blue/30 bg-mint/60 p-3">
+                      <p className="text-sm font-bold">Suggested next actions</p>
+                      <ul className="mt-2 space-y-1 text-sm text-neutral-600">{recap.suggested_actions.map((action) => <li key={action}>{action}</li>)}</ul>
+                    </div>
+                    <div className="rounded-lg border border-line p-3">
+                      <p className="text-sm font-bold">Room energy</p>
+                      <div className="mt-2 flex flex-wrap gap-2">{recap.top_terms.map((term) => <span key={term} className="rounded-full border border-line px-2 py-1 text-xs text-neutral-600">{term}</span>)}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </section>
       )}
@@ -325,15 +481,13 @@ export default function EventPage({ profile }: { profile: Profile }) {
           {loading && <p className="text-sm text-neutral-500">Loading events...</p>}
           {!loading && events.length === 0 && <p className="text-sm text-neutral-500">No events yet.</p>}
           {events.map((item) => (
-            <button
-              key={item.id}
-              className={`rounded-lg border p-3 text-left ${activeEvent?.id === item.id ? "border-ink bg-paper" : "border-line"}`}
-              onClick={() => setActiveEventId(item.id)}
-              type="button"
-            >
+            <button key={item.id} className={`rounded-lg border p-3 text-left ${activeEvent?.id === item.id ? "border-ink bg-paper" : "border-line"}`} onClick={() => setActiveEventId(item.id)} type="button">
               <p className="font-semibold">{item.name}</p>
               <p className="mt-1 font-mono text-sm">{item.code}</p>
-              <p className="mt-1 text-xs text-neutral-500">{item.attendees.length} attendee(s)</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                {item.attendees.length} attendee(s)
+                {item.starts_at ? ` - ${formatDate(item.starts_at)}` : ""}
+              </p>
             </button>
           ))}
         </div>

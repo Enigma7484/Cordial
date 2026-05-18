@@ -69,12 +69,23 @@ class FollowupUpdateIn(BaseModel):
     status: Literal["open", "completed"] = "open"
 
 
-class EventCreateIn(BaseModel):
+class EventBase(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=1200)
+    location: str = Field(default="", max_length=160)
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    event_url: str = Field(default="", max_length=400)
+    host_note: str = Field(default="", max_length=800)
+    links: list[Link] = []
 
 
-class EventUpdateIn(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
+class EventCreateIn(EventBase):
+    pass
+
+
+class EventUpdateIn(EventBase):
+    pass
 
 
 class AskCreateIn(BaseModel):
