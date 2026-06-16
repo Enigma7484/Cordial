@@ -100,6 +100,12 @@ export default function EventPage({ profile, initialJoinCode = "" }: { profile: 
     if (initialJoinCode) setJoinCode(initialJoinCode);
   }, [initialJoinCode]);
 
+  useEffect(() => {
+    if (activeEvent && recap?.event.id !== activeEvent.id) {
+      loadRecap(activeEvent);
+    }
+  }, [activeEvent?.id]);
+
   function upsertEvent(event: Event) {
     setEvents((current) => {
       const exists = current.some((item) => item.id === event.id);
@@ -253,6 +259,18 @@ export default function EventPage({ profile, initialJoinCode = "" }: { profile: 
     const url = `${window.location.origin}${window.location.pathname}#/join/${event.code}`;
     await navigator.clipboard.writeText(url);
     setMessage("Join link copied.");
+  }
+
+  async function copyHostReport(recap: EventRecap) {
+    const report = [
+      recap.host_summary,
+      `Connection rate: ${recap.connection_rate}%`,
+      `Follow-up completion: ${recap.followup_completion_rate}%`,
+      `Top attendee themes: ${recap.top_terms.length ? recap.top_terms.join(", ") : "none captured yet"}`,
+      `Next action: ${recap.suggested_actions[0] || "Create one follow-up before the event goes cold."}`,
+    ].join("\n");
+    await navigator.clipboard.writeText(report);
+    setMessage("Host outcome report copied.");
   }
 
   function EventFields({
@@ -492,10 +510,25 @@ export default function EventPage({ profile, initialJoinCode = "" }: { profile: 
               </div>
               {recap?.event.id === activeEvent.id && (
                 <div className="mt-5 border-t border-line pt-5">
-                  <div className="grid gap-3 md:grid-cols-4">
+                  <div className="mb-4 rounded-lg border border-blue/30 bg-mint/60 p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <p className="label">Host outcome report</p>
+                        <h3 className="mt-1 text-xl font-black">Proof the room created momentum.</h3>
+                        <p className="mt-2 text-sm leading-6 text-neutral-600">{recap.host_summary}</p>
+                      </div>
+                      <button className="btn-primary !h-9 !min-h-9 shrink-0 !px-3" onClick={() => copyHostReport(recap)} type="button">
+                        <Copy size={14} />
+                        Copy report
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
                     <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.attendees_seen}</p><p className="text-xs text-neutral-500">attendees</p></div>
                     <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.connections_from_event}</p><p className="text-xs text-neutral-500">event connects</p></div>
                     <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.open_followups}</p><p className="text-xs text-neutral-500">open follow-ups</p></div>
+                    <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.completed_followups}</p><p className="text-xs text-neutral-500">completed</p></div>
+                    <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.connection_rate}%</p><p className="text-xs text-neutral-500">connect rate</p></div>
                     <div className="rounded-lg border border-line p-3"><p className="text-2xl font-black">{recap.not_connected.length}</p><p className="text-xs text-neutral-500">not connected</p></div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">

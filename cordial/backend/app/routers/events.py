@@ -63,6 +63,9 @@ async def event_recap(event_id: str, current_user: dict = Depends(get_current_us
     not_connected = [user for user in attendee_profiles if user and user["id"] not in connected_ids]
     open_followups = [followup for followup in followups if followup.get("status") == "open"]
     completed_followups = [followup for followup in followups if followup.get("status") == "completed"]
+    followup_count = len(open_followups) + len(completed_followups)
+    connection_rate = round((len(event_connection_ids) / len(attendee_ids)) * 100) if attendee_ids else 0
+    followup_completion_rate = round((len(completed_followups) / followup_count) * 100) if followup_count else 0
     attendee_terms = []
     for user in attendee_profiles:
         attendee_terms.extend((user or {}).get("skills", [])[:2])
@@ -74,6 +77,10 @@ async def event_recap(event_id: str, current_user: dict = Depends(get_current_us
         suggested_actions.append(f"Close the loop on {len(open_followups)} event follow-up(s).")
     if not suggested_actions:
         suggested_actions.append("Create one follow-up from the strongest conversation before the event goes cold.")
+    host_summary = (
+        f"{event.get('name', 'This event')} brought together {len(attendee_ids)} attendee(s), "
+        f"created {len(event_connection_ids)} saved event connection(s), and generated {followup_count} follow-up(s)."
+    )
 
     return {
         "event": await serialize_event(event),
@@ -81,6 +88,9 @@ async def event_recap(event_id: str, current_user: dict = Depends(get_current_us
         "connections_from_event": len(event_connection_ids),
         "open_followups": len(open_followups),
         "completed_followups": len(completed_followups),
+        "connection_rate": connection_rate,
+        "followup_completion_rate": followup_completion_rate,
+        "host_summary": host_summary,
         "not_connected": not_connected[:8],
         "top_terms": sorted(set(attendee_terms))[:10],
         "suggested_actions": suggested_actions,

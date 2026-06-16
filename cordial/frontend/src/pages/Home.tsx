@@ -288,6 +288,16 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
               </div>
             </div>
           )}
+          <div className="mt-4 rounded-lg border border-line p-3">
+            <p className="text-sm font-bold">5-minute pitch path</p>
+            <div className="mt-3 grid gap-2 text-sm text-neutral-600 md:grid-cols-2">
+              <p>1. Seed the pitch demo.</p>
+              <p>2. Open Event Mode and share the join QR.</p>
+              <p>3. Connect with two attendees from the room.</p>
+              <p>4. Add or complete one follow-up.</p>
+              <p>5. Copy the host outcome report.</p>
+            </div>
+          </div>
         </section>
 
         <form onSubmit={connect} className="panel space-y-3">

@@ -143,6 +143,9 @@ export type EventRecap = {
   connections_from_event: number;
   open_followups: number;
   completed_followups: number;
+  connection_rate: number;
+  followup_completion_rate: number;
+  host_summary: string;
   not_connected: PublicUser[];
   top_terms: string[];
   suggested_actions: string[];
