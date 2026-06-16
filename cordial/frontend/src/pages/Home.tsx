@@ -1,6 +1,6 @@
 import { CalendarPlus, Check, Clock3, Handshake, Pencil, Plus, RotateCcw, Sparkles, Target, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { api, Ask, Connection, ConnectionTimeline, Event, Followup, Profile, SignalReply } from "../lib/api";
+import { api, Ask, Connection, ConnectionTimeline, DemoSeedResult, Event, Followup, Profile, SignalReply } from "../lib/api";
 
 function profileStrength(profile: Profile) {
   const checks = [
@@ -200,6 +200,21 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
     }
   }
 
+  async function seedDemo() {
+    setMessage("");
+    setError("");
+    setBusy(true);
+    try {
+      const result = await api<DemoSeedResult>("/demo/seed", { method: "POST" });
+      await loadDashboard();
+      setMessage(`Demo room ready: ${result.event.name} (${result.event.code}).`);
+    } catch (seedError) {
+      setError(seedError instanceof Error ? seedError.message : "Could not seed demo data");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-[1.1fr_0.9fr]">
       <section className="space-y-5">
@@ -207,6 +222,15 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
           <p className="text-sm text-neutral-500">@{profile.handle}</p>
           <h1 className="mt-1 text-3xl font-black tracking-normal">Hi, {profile.name || "there"}.</h1>
           <p className="mt-2 max-w-xl text-neutral-600">Keep the conversation warm after the room clears.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={seedDemo} type="button" disabled={busy}>
+              <Sparkles size={15} />
+              Seed pitch demo
+            </button>
+            <a className="btn-soft !h-9 !min-h-9 !px-3" href={`#/u/${profile.handle}`} target="_blank" rel="noreferrer">
+              Public profile
+            </a>
+          </div>
         </div>
 
         <section className="panel">

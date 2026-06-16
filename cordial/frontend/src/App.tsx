@@ -30,6 +30,10 @@ export default function App() {
     const match = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
     return match?.[1] || "";
   });
+  const [joinCodeFromHash, setJoinCodeFromHash] = useState(() => {
+    const match = window.location.hash.match(/^#\/join\/([a-zA-Z0-9]+)/);
+    return match?.[1]?.toUpperCase() || "";
+  });
 
   async function loadProfile() {
     setLoading(true);
@@ -50,12 +54,19 @@ export default function App() {
 
   useEffect(() => {
     function syncHash() {
-      const match = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
-      setPublicHandle(match?.[1] || "");
+      const profileMatch = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
+      const joinMatch = window.location.hash.match(/^#\/join\/([a-zA-Z0-9]+)/);
+      setPublicHandle(profileMatch?.[1] || "");
+      setJoinCodeFromHash(joinMatch?.[1]?.toUpperCase() || "");
+      if (joinMatch) setPage("events");
     }
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
   }, []);
+
+  useEffect(() => {
+    if (profile && joinCodeFromHash) setPage("events");
+  }, [profile, joinCodeFromHash]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -114,7 +125,7 @@ export default function App() {
           />
         )}
         {page === "profile" && <ProfilePage profile={profile} onSaved={setProfile} />}
-        {page === "events" && <EventPage profile={profile} />}
+        {page === "events" && <EventPage profile={profile} initialJoinCode={joinCodeFromHash} />}
         {page === "asks" && <AsksPage profile={profile} />}
         {page === "connection" && activeConnectionId && <ConnectionPage connectionId={activeConnectionId} onBack={() => setPage("home")} />}
       </main>

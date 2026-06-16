@@ -45,12 +45,16 @@ async def event_recap(event_id: str, current_user: dict = Depends(get_current_us
         raise HTTPException(status_code=403, detail="You are not part of this event")
 
     attendee_ids = event.get("attendees", [])
+    is_host = event.get("host_id") == current_user["_id"]
     connections = await db.connections.find(
-        {"$or": [{"user_a": current_user["_id"]}, {"user_b": current_user["_id"]}]}
+        {"event_id": event_id}
+        if is_host
+        else {"$or": [{"user_a": current_user["_id"]}, {"user_b": current_user["_id"]}]}
     ).to_list(length=100)
     connected_ids = {
         connection["user_b"] if connection["user_a"] == current_user["_id"] else connection["user_a"]
         for connection in connections
+        if current_user["_id"] in [connection["user_a"], connection["user_b"]]
     }
     event_connection_ids = [connection["_id"] for connection in connections if connection.get("event_id") == event_id]
     followups = await db.followups.find({"connection_id": {"$in": event_connection_ids}}).to_list(length=100)

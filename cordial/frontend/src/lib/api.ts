@@ -147,3 +147,10 @@ export type EventRecap = {
   top_terms: string[];
   suggested_actions: string[];
 };
+
+export type DemoSeedResult = {
+  ok: boolean;
+  event: Event;
+  people: Profile[];
+  connections_created: number;
+};

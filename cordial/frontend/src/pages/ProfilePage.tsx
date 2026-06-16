@@ -1,4 +1,4 @@
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, Download, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import ProfileForm from "../components/ProfileForm";
 import { Profile } from "../lib/api";
@@ -39,6 +39,7 @@ function strength(profile: Profile) {
 export default function ProfilePage({ profile, onSaved }: { profile: Profile; onSaved: (profile: Profile) => void }) {
   const [shareMessage, setShareMessage] = useState("");
   const publicUrl = `${window.location.origin}${window.location.pathname}#/u/${profile.handle}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=16&data=${encodeURIComponent(publicUrl)}`;
   const profileStrength = strength(profile);
 
   async function copyShareUrl() {
@@ -65,6 +66,29 @@ export default function ProfilePage({ profile, onSaved }: { profile: Profile; on
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
+        <div className="panel lg:col-span-2">
+          <div className="grid gap-4 md:grid-cols-[auto_1fr] md:items-center">
+            <div className="w-44 rounded-lg border border-line bg-white p-3">
+              <img className="aspect-square w-full" src={qrUrl} alt="Public profile QR code" />
+            </div>
+            <div>
+              <p className="label">Room-ready share card</p>
+              <h2 className="mt-1 text-2xl font-black">Let people save you without the social-media shuffle.</h2>
+              <p className="mt-2 break-all text-sm text-neutral-600">{publicUrl}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={copyShareUrl} type="button">
+                  <Copy size={14} />
+                  Copy link
+                </button>
+                <a className="btn-soft !h-9 !min-h-9 !px-3" href={qrUrl} download={`cordial-${profile.handle}-qr.png`}>
+                  <Download size={14} />
+                  QR image
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="panel lg:col-span-2">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

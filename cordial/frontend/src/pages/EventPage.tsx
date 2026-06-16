@@ -1,4 +1,4 @@
-import { Calendar, ExternalLink, Link as LinkIcon, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Calendar, Copy, ExternalLink, Link as LinkIcon, MapPin, Pencil, Plus, Share2, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { api, Event, EventRecap, Profile } from "../lib/api";
 
@@ -60,7 +60,7 @@ function formatDate(value?: string | null) {
   return new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-export default function EventPage({ profile }: { profile: Profile }) {
+export default function EventPage({ profile, initialJoinCode = "" }: { profile: Profile; initialJoinCode?: string }) {
   const [form, setForm] = useState<EventForm>(blankForm());
   const [joinCode, setJoinCode] = useState("");
   const [editingForm, setEditingForm] = useState<EventForm>(blankForm());
@@ -77,6 +77,7 @@ export default function EventPage({ profile }: { profile: Profile }) {
 
   const activeEvent = events.find((item) => item.id === activeEventId) || events[0] || null;
   const isHost = activeEvent?.host_id === profile.id;
+  const activeJoinUrl = activeEvent ? `${window.location.origin}${window.location.pathname}#/join/${activeEvent.code}` : "";
 
   async function loadEvents() {
     setError("");
@@ -94,6 +95,10 @@ export default function EventPage({ profile }: { profile: Profile }) {
   useEffect(() => {
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    if (initialJoinCode) setJoinCode(initialJoinCode);
+  }, [initialJoinCode]);
 
   function upsertEvent(event: Event) {
     setEvents((current) => {
@@ -239,6 +244,17 @@ export default function EventPage({ profile }: { profile: Profile }) {
     }
   }
 
+  async function copyEventCode(event: Event) {
+    await navigator.clipboard.writeText(event.code);
+    setMessage(`Copied event code ${event.code}.`);
+  }
+
+  async function copyEventLink(event: Event) {
+    const url = `${window.location.origin}${window.location.pathname}#/join/${event.code}`;
+    await navigator.clipboard.writeText(url);
+    setMessage("Join link copied.");
+  }
+
   function EventFields({
     value,
     editing = false,
@@ -329,6 +345,7 @@ export default function EventPage({ profile }: { profile: Profile }) {
             required
           />
           <button className="btn-primary w-full" disabled={busy}>Join</button>
+          {initialJoinCode && <p className="text-xs text-neutral-500">Join code pulled from the shared link.</p>}
           {message && <p className="text-sm text-neutral-600">{message}</p>}
           {error && <p className="text-sm text-coral">{error}</p>}
         </form>
@@ -404,6 +421,29 @@ export default function EventPage({ profile }: { profile: Profile }) {
                     {activeEvent.code}
                   </p>
                   <p className="mt-3 text-sm text-neutral-500">{activeEvent.attendees.length} attendee(s)</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
+                    <div className="w-32 rounded-lg border border-line bg-white p-2">
+                      <img
+                        className="aspect-square w-full"
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=12&data=${encodeURIComponent(activeJoinUrl)}`}
+                        alt="Event join QR code"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">Room join link</p>
+                      <p className="mt-1 break-all text-xs text-neutral-500">{activeJoinUrl}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button className="btn-soft !h-8 !min-h-8 !px-2" onClick={() => copyEventCode(activeEvent)} type="button">
+                          <Copy size={13} />
+                          Code
+                        </button>
+                        <button className="btn-soft !h-8 !min-h-8 !px-2" onClick={() => copyEventLink(activeEvent)} type="button">
+                          <Share2 size={13} />
+                          Link
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => loadRecap(activeEvent)} type="button">
                       Recap
