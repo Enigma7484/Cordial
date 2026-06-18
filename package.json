@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix cordial/frontend ci && npm --prefix cordial/frontend run build && rm -rf dist && cp -R cordial/frontend/dist dist"
+  }
+}
