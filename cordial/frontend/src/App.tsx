@@ -1,4 +1,4 @@
-import { LogOut, MessageSquare, Moon, Sparkles, Sun, UserRound, UsersRound } from "lucide-react";
+import { Cable, LogOut, MessageSquare, Moon, Settings, Sparkles, Sun, UserRound, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import BrandMark from "./components/BrandMark";
 import AuthPage from "./pages/AuthPage";
@@ -8,16 +8,21 @@ import EventPage from "./pages/EventPage";
 import AsksPage from "./pages/AsksPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import ConnectionPage from "./pages/ConnectionPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import SettingsPage from "./pages/SettingsPage";
 import { api, Profile } from "./lib/api";
 import { clearToken, getToken } from "./lib/auth";
+import { AppPreferences, loadPreferences, savePreferences } from "./lib/preferences";
 
-type Page = "home" | "profile" | "events" | "asks" | "connection";
+type Page = "home" | "profile" | "events" | "asks" | "integrations" | "settings" | "connection";
 
 const nav = [
   { id: "home", label: "Home", icon: Sparkles },
   { id: "profile", label: "Profile", icon: UserRound },
   { id: "events", label: "Events", icon: UsersRound },
   { id: "asks", label: "Signals", icon: MessageSquare },
+  { id: "integrations", label: "Connections", icon: Cable },
+  { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
 export default function App() {
@@ -25,7 +30,7 @@ export default function App() {
   const [page, setPage] = useState<Page>("home");
   const [activeConnectionId, setActiveConnectionId] = useState("");
   const [loading, setLoading] = useState(Boolean(getToken()));
-  const [dark, setDark] = useState(() => localStorage.getItem("cordial_theme") === "dark");
+  const [preferences, setPreferences] = useState<AppPreferences>(() => loadPreferences());
   const [publicHandle, setPublicHandle] = useState(() => {
     const match = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
     return match?.[1] || "";
@@ -69,9 +74,12 @@ export default function App() {
   }, [profile, joinCodeFromHash]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("cordial_theme", dark ? "dark" : "light");
-  }, [dark]);
+    document.documentElement.classList.toggle("dark", preferences.theme !== "light");
+    document.documentElement.classList.toggle("theme-aurora", preferences.theme === "aurora");
+    document.documentElement.classList.toggle("density-compact", preferences.density === "compact");
+    document.documentElement.classList.toggle("motion-expressive", preferences.motion === "expressive");
+    savePreferences(preferences);
+  }, [preferences]);
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-sm">Loading Cordial...</div>;
@@ -97,8 +105,15 @@ export default function App() {
             </span>
           </button>
           <div className="flex items-center gap-2">
-            <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => setDark(!dark)} title="Toggle dark mode">
-              {dark ? <Sun size={16} /> : <Moon size={16} />}
+            <button
+              className="btn-soft !h-9 !min-h-9 !px-3"
+              onClick={() => setPreferences({ ...preferences, theme: preferences.theme === "light" ? "dark" : "light" })}
+              title="Toggle theme"
+            >
+              {preferences.theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
+            <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => setPage("settings")} title="Settings">
+              <Settings size={16} />
             </button>
             <button
               className="btn-soft !h-9 !min-h-9 !px-3"
@@ -127,11 +142,13 @@ export default function App() {
         {page === "profile" && <ProfilePage profile={profile} onSaved={setProfile} />}
         {page === "events" && <EventPage profile={profile} initialJoinCode={joinCodeFromHash} />}
         {page === "asks" && <AsksPage profile={profile} />}
+        {page === "integrations" && <IntegrationsPage preferences={preferences} onChange={setPreferences} />}
+        {page === "settings" && <SettingsPage preferences={preferences} onChange={setPreferences} />}
         {page === "connection" && activeConnectionId && <ConnectionPage connectionId={activeConnectionId} onBack={() => setPage("home")} />}
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-white md:hidden">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-6">
           {nav.map((item) => {
             const Icon = item.icon;
             return (

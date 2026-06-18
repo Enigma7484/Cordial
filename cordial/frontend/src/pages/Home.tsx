@@ -1,4 +1,4 @@
-import { CalendarPlus, Check, Clock3, Handshake, Pencil, Plus, RotateCcw, Sparkles, Target, Trash2, X } from "lucide-react";
+import { CalendarPlus, Check, Clock3, Handshake, Pencil, Plus, Radio, RotateCcw, ShieldCheck, Sparkles, Target, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { api, Ask, Connection, ConnectionTimeline, DemoSeedResult, Event, Followup, Profile, SignalReply } from "../lib/api";
 
@@ -218,10 +218,16 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
   return (
     <div className="grid gap-5 md:ml-52 md:grid-cols-[1.1fr_0.9fr]">
       <section className="space-y-5">
-        <div>
-          <p className="text-sm text-neutral-500">@{profile.handle}</p>
-          <h1 className="mt-1 text-3xl font-black tracking-normal">Hi, {profile.name || "there"}.</h1>
-          <p className="mt-2 max-w-xl text-neutral-600">Keep the conversation warm after the room clears.</p>
+        <div className="experience-hero">
+          <div>
+            <p className="text-sm font-bold text-blue">@{profile.handle}</p>
+            <h1 className="mt-2 text-4xl font-black tracking-normal">Hi, {profile.name || "there"}.</h1>
+            <p className="mt-3 max-w-xl text-neutral-600">Your relationship command layer for events, warm intros, signals, and follow-ups.</p>
+          </div>
+          <div className="hero-signal">
+            <Radio size={28} />
+            <span>{openFollowups.length + signalReplies.length + events.length} live loop(s)</span>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={seedDemo} type="button" disabled={busy}>
               <Sparkles size={15} />
@@ -238,20 +244,20 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
             <Target size={18} />
             <h2 className="font-bold">Command Center</h2>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-line p-3">
+          <div className="metric-strip mt-4">
+            <div className="metric-card">
               <p className="text-2xl font-black">{todaysFollowups.length}</p>
               <p className="text-xs text-neutral-500">due or unscheduled</p>
             </div>
-            <div className="rounded-lg border border-line p-3">
+            <div className="metric-card">
               <p className="text-2xl font-black">{signalReplies.length}</p>
               <p className="text-xs text-neutral-500">signal replies</p>
             </div>
-            <div className="rounded-lg border border-line p-3">
+            <div className="metric-card">
               <p className="text-2xl font-black">{events.length}</p>
               <p className="text-xs text-neutral-500">active events</p>
             </div>
-            <div className="rounded-lg border border-line p-3">
+            <div className="metric-card">
               <p className="text-2xl font-black">{strength.score}%</p>
               <p className="text-xs text-neutral-500">profile strength</p>
             </div>
@@ -289,13 +295,17 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
             </div>
           )}
           <div className="mt-4 rounded-lg border border-line p-3">
-            <p className="text-sm font-bold">5-minute pitch path</p>
-            <div className="mt-3 grid gap-2 text-sm text-neutral-600 md:grid-cols-2">
-              <p>1. Seed the pitch demo.</p>
-              <p>2. Open Event Mode and share the join QR.</p>
-              <p>3. Connect with two attendees from the room.</p>
-              <p>4. Add or complete one follow-up.</p>
-              <p>5. Copy the host outcome report.</p>
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} />
+              <p className="text-sm font-bold">5-minute pitch path</p>
+            </div>
+            <div className="mt-3 grid gap-2 text-sm text-neutral-600 md:grid-cols-5">
+              {["Seed demo", "Share room QR", "Connect", "Follow up", "Copy report"].map((step, index) => (
+                <div key={step} className="pitch-step">
+                  <span>{index + 1}</span>
+                  {step}
+                </div>
+              ))}
             </div>
           </div>
         </section>
