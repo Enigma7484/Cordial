@@ -42,6 +42,8 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
   const [connectionTimeline, setConnectionTimeline] = useState<ConnectionTimeline | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [seedMessage, setSeedMessage] = useState("");
+  const [seedError, setSeedError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -201,15 +203,16 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
   }
 
   async function seedDemo() {
-    setMessage("");
-    setError("");
+    setSeedMessage("Creating a pitch-ready demo room...");
+    setSeedError("");
     setBusy(true);
     try {
       const result = await api<DemoSeedResult>("/demo/seed", { method: "POST" });
       await loadDashboard();
-      setMessage(`Demo room ready: ${result.event.name} (${result.event.code}).`);
+      setSeedMessage(`Demo room ready: ${result.event.name} (${result.event.code}). Use the pitch path below to walk it.`);
     } catch (seedError) {
-      setError(seedError instanceof Error ? seedError.message : "Could not seed demo data");
+      setSeedMessage("");
+      setSeedError(seedError instanceof Error ? seedError.message : "Could not seed demo data");
     } finally {
       setBusy(false);
     }
@@ -231,12 +234,13 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
           <div className="mt-4 flex flex-wrap gap-2">
             <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={seedDemo} type="button" disabled={busy}>
               <Sparkles size={15} />
-              Seed pitch demo
+              {busy && seedMessage ? "Seeding demo..." : "Seed pitch demo"}
             </button>
             <a className="btn-soft !h-9 !min-h-9 !px-3" href={`#/u/${profile.handle}`} target="_blank" rel="noreferrer">
               Public profile
             </a>
           </div>
+          {(seedMessage || seedError) && <p className={`hero-feedback ${seedError ? "hero-feedback-error" : ""}`}>{seedError || seedMessage}</p>}
         </div>
 
         <section className="panel">
@@ -310,40 +314,6 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
           </div>
         </section>
 
-        <form onSubmit={connect} className="panel space-y-3">
-          <div className="flex items-center gap-2">
-            <Handshake size={18} />
-            <h2 className="font-bold">Quick Connect</h2>
-          </div>
-          <input
-            className="input"
-            value={handle}
-            onChange={(event) => setHandle(event.target.value.toLowerCase())}
-            placeholder="handle"
-            required
-          />
-          <textarea
-            className="input min-h-24"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="Optional context: met after the design panel, talked about PM internships..."
-          />
-          <select className="input" value={eventId} onChange={(event) => setEventId(event.target.value)}>
-            <option value="">No event context</option>
-            {events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name} ({event.code})
-              </option>
-            ))}
-          </select>
-          <button className="btn-primary w-full" disabled={busy}>
-            <Plus size={16} />
-            Connect
-          </button>
-          {message && <p className="text-sm text-neutral-600">{message}</p>}
-          {error && <p className="text-sm text-coral">{error}</p>}
-        </form>
-
         <section className="panel space-y-3">
           <h2 className="font-bold">Connections</h2>
           {loading && <p className="text-sm text-neutral-500">Loading connections...</p>}
@@ -395,9 +365,44 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
         )}
       </section>
 
-      <section className="panel h-fit">
-        {selectedConnection && (
-          <div className="mb-5 border-b border-line pb-5">
+      <section className="space-y-5">
+        <form onSubmit={connect} className="panel space-y-3">
+          <div className="flex items-center gap-2">
+            <Handshake size={18} />
+            <h2 className="font-bold">Quick Connect</h2>
+          </div>
+          <input
+            className="input"
+            value={handle}
+            onChange={(event) => setHandle(event.target.value.toLowerCase())}
+            placeholder="handle"
+            required
+          />
+          <textarea
+            className="input min-h-24"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Optional context: met after the design panel, talked about PM internships..."
+          />
+          <select className="input" value={eventId} onChange={(event) => setEventId(event.target.value)}>
+            <option value="">No event context</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name} ({event.code})
+              </option>
+            ))}
+          </select>
+          <button className="btn-primary w-full" disabled={busy}>
+            <Plus size={16} />
+            Connect
+          </button>
+          {message && <p className="text-sm text-neutral-600">{message}</p>}
+          {error && <p className="text-sm text-coral">{error}</p>}
+        </form>
+
+        <section className="panel h-fit">
+          {selectedConnection && (
+            <div className="mb-5 border-b border-line pb-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="label">Relationship snapshot</p>
@@ -452,75 +457,76 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
               </div>
             ) : null}
           </div>
-        )}
+          )}
 
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-bold">My follow-ups</h2>
-          <span className="rounded-full border border-line px-3 py-1 text-xs text-neutral-500">{openFollowups.length} open</span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {openFollowups.length === 0 && <p className="text-sm text-neutral-500">No open cards yet.</p>}
-          {openFollowups.map((item) => (
-            <div key={item.id} className="rounded-lg border border-line p-3">
-              {editingFollowupId === item.id ? (
-                <div className="space-y-2">
-                  <input className="input" value={editingText} onChange={(event) => setEditingText(event.target.value)} />
-                  <input className="input" type="date" value={editingDueDate} onChange={(event) => setEditingDueDate(event.target.value)} />
-                  <div className="flex gap-2">
-                    <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={() => saveFollowupEdit(item)} type="button">
-                      Save
-                    </button>
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => setEditingFollowupId("")} type="button">
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">{item.text}</p>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      @{item.other_user?.handle || "connection"}
-                      {item.due_date ? ` - due ${new Date(item.due_date).toLocaleDateString()}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => startEditingFollowup(item)} title="Edit">
-                      <Pencil size={14} />
-                    </button>
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => deleteFollowup(item)} title="Delete">
-                      <Trash2 size={14} />
-                    </button>
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Mark completed">
-                      <Check size={15} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {completedFollowups.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-sm font-bold text-neutral-500">Completed</h3>
-            <div className="mt-3 space-y-2">
-              {completedFollowups.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-line p-3 opacity-70">
-                  <p className="text-sm line-through">{item.text}</p>
-                  <div className="flex gap-1">
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => deleteFollowup(item)} title="Delete">
-                      <Trash2 size={14} />
-                    </button>
-                    <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Reopen">
-                      <RotateCcw size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-bold">My follow-ups</h2>
+            <span className="rounded-full border border-line px-3 py-1 text-xs text-neutral-500">{openFollowups.length} open</span>
           </div>
-        )}
+          <div className="mt-4 space-y-3">
+            {openFollowups.length === 0 && <p className="text-sm text-neutral-500">No open cards yet.</p>}
+            {openFollowups.map((item) => (
+              <div key={item.id} className="rounded-lg border border-line p-3">
+                {editingFollowupId === item.id ? (
+                  <div className="space-y-2">
+                    <input className="input" value={editingText} onChange={(event) => setEditingText(event.target.value)} />
+                    <input className="input" type="date" value={editingDueDate} onChange={(event) => setEditingDueDate(event.target.value)} />
+                    <div className="flex gap-2">
+                      <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={() => saveFollowupEdit(item)} type="button">
+                        Save
+                      </button>
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => setEditingFollowupId("")} type="button">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">{item.text}</p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        @{item.other_user?.handle || "connection"}
+                        {item.due_date ? ` - due ${new Date(item.due_date).toLocaleDateString()}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => startEditingFollowup(item)} title="Edit">
+                        <Pencil size={14} />
+                      </button>
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => deleteFollowup(item)} title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Mark completed">
+                        <Check size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {completedFollowups.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-bold text-neutral-500">Completed</h3>
+              <div className="mt-3 space-y-2">
+                {completedFollowups.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-line p-3 opacity-70">
+                    <p className="text-sm line-through">{item.text}</p>
+                    <div className="flex gap-1">
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => deleteFollowup(item)} title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                      <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={() => toggleFollowup(item)} title="Reopen">
+                        <RotateCcw size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
       </section>
     </div>
   );
