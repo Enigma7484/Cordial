@@ -221,7 +221,7 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
         <div className="experience-hero">
           <div>
             <p className="text-sm font-bold text-blue">@{profile.handle}</p>
-            <h1 className="mt-2 text-4xl font-black tracking-normal">Hi, {profile.name || "there"}.</h1>
+            <h1 className="mt-2 max-w-2xl text-4xl font-black tracking-normal">Hi, {profile.name || "there"}.</h1>
             <p className="mt-3 max-w-xl text-neutral-600">Your relationship command layer for events, warm intros, signals, and follow-ups.</p>
           </div>
           <div className="hero-signal">
