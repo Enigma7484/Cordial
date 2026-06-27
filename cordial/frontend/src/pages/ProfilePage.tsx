@@ -48,7 +48,7 @@ export default function ProfilePage({ profile, onSaved }: { profile: Profile; on
   }
 
   return (
-    <div className="grid gap-5 md:ml-52">
+    <div className="grid gap-5">
       <section>
         <h1 className="text-3xl font-black tracking-normal">Profile</h1>
         <p className="mt-2 text-neutral-600">One identity, two modes: crisp when it matters, human all the time.</p>

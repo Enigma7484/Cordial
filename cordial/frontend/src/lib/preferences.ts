@@ -13,7 +13,7 @@ export type AppPreferences = {
 };
 
 export const defaultPreferences: AppPreferences = {
-  theme: "dark",
+  theme: "light",
   density: "cozy",
   motion: "calm",
   defaultReminder: "tomorrow",

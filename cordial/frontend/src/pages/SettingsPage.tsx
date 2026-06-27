@@ -30,18 +30,18 @@ export default function SettingsPage({
   const update = (patch: Partial<AppPreferences>) => onChange({ ...preferences, ...patch });
 
   return (
-    <div className="grid gap-5 md:ml-52">
+    <div className="grid gap-5">
       <section className="experience-hero">
         <div>
           <p className="label">Settings</p>
-          <h1 className="mt-2 text-4xl font-black tracking-normal">Tune Cordial for your room.</h1>
+          <h1 className="mt-2 text-4xl font-black tracking-normal">Make Cordial feel like yours.</h1>
           <p className="mt-3 max-w-2xl text-neutral-600">
-            Preferences are saved locally for the demo: theme, density, reminders, and integration readiness.
+            Choose how your workspace looks, moves, and reminds you to follow through.
           </p>
         </div>
         <div className="hero-signal">
           <Settings size={28} />
-          <span>Demo-ready controls</span>
+          <span>Personalized workspace</span>
         </div>
       </section>
 
@@ -77,7 +77,7 @@ export default function SettingsPage({
         <div className="panel">
           <div className="flex items-center gap-2">
             <Sparkles size={18} />
-            <h2 className="font-bold">Demo polish</h2>
+            <h2 className="font-bold">Workspace habits</h2>
           </div>
           <label className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-line p-3">
             <span>
@@ -111,12 +111,12 @@ export default function SettingsPage({
       <section className="panel">
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={18} />
-          <h2 className="font-bold">What these settings unlock next</h2>
+          <h2 className="font-bold">Built around your rhythm</h2>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="feature-tile">Personalized event room themes</div>
-          <div className="feature-tile">Reminder presets for every new follow-up</div>
-          <div className="feature-tile">Host-ready reports with one-click sharing</div>
+          <div className="feature-tile">A workspace that stays readable</div>
+          <div className="feature-tile">Consistent reminders for every promise</div>
+          <div className="feature-tile">Reports ready when the room ends</div>
         </div>
       </section>
     </div>

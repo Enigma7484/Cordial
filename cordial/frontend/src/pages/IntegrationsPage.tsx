@@ -25,19 +25,16 @@ export default function IntegrationsPage({
   }
 
   return (
-    <div className="grid gap-5 md:ml-52">
+    <div className="grid gap-5">
       <section className="experience-hero">
         <div>
-          <p className="label">Connections</p>
-          <h1 className="mt-2 text-4xl font-black tracking-normal">Connect Cordial to the tools people already use.</h1>
+          <p className="label">Your workflow</p>
+          <h1 className="mt-2 text-4xl font-black tracking-normal">Cordial should meet you where follow-through happens.</h1>
           <p className="mt-3 max-w-2xl text-neutral-600">
-            These are demo-ready preference toggles for now. They show the product direction without pretending OAuth is wired yet.
+            Choose the tools you want first. We’ll keep your priorities here as each connection becomes available.
           </p>
         </div>
-        <a className="btn-primary !h-10 !min-h-10 !px-3" href="#/u/demo" onClick={(event) => event.preventDefault()}>
-          <ExternalLink size={15} />
-          API roadmap
-        </a>
+        <div className="hero-signal"><ExternalLink size={18} /><span>Your preferred stack</span></div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
@@ -50,13 +47,13 @@ export default function IntegrationsPage({
                 <div className="integration-icon">
                   <Icon size={20} />
                 </div>
-                <span className={`status-pill ${connected ? "status-pill-on" : ""}`}>{connected ? "Ready" : "Planned"}</span>
+                <span className={`status-pill ${connected ? "status-pill-on" : ""}`}>{connected ? "Requested" : "Coming soon"}</span>
               </div>
               <h2 className="mt-5 text-xl font-black">{integration.name}</h2>
               <p className="mt-2 text-sm leading-6 text-neutral-600">{integration.detail}</p>
               <button className="btn-soft mt-5 w-full" type="button" onClick={() => toggle(integration.id)}>
                 {connected && <Check size={15} />}
-                {connected ? "Marked ready" : "Mark as priority"}
+                {connected ? "Priority saved" : "I want this"}
               </button>
             </div>
           );
@@ -64,12 +61,12 @@ export default function IntegrationsPage({
       </section>
 
       <section className="panel">
-        <h2 className="font-bold">Integration order for a serious MVP</h2>
+        <h2 className="font-bold">How your stack will work together</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <div className="feature-tile">1. Calendar scheduling</div>
-          <div className="feature-tile">2. Email follow-up drafts</div>
-          <div className="feature-tile">3. Host recap export</div>
-          <div className="feature-tile">4. Community chat handoff</div>
+          <div className="feature-tile">Schedule the next conversation</div>
+          <div className="feature-tile">Draft the promised email</div>
+          <div className="feature-tile">Share a room recap</div>
+          <div className="feature-tile">Bring context back to community</div>
         </div>
       </section>
     </div>

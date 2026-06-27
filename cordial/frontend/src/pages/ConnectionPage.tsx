@@ -42,7 +42,7 @@ export default function ConnectionPage({ connectionId, onBack }: { connectionId:
   }
 
   return (
-    <div className="grid gap-5 md:ml-52 lg:grid-cols-[0.85fr_1.15fr]">
+    <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
       <section className="space-y-5">
         <button className="btn-soft !h-9 !min-h-9 !px-3" onClick={onBack} type="button">
           <ArrowLeft size={14} />

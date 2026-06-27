@@ -337,10 +337,11 @@ export default function EventPage({ profile, initialJoinCode = "" }: { profile: 
   }
 
   return (
-    <div className="grid gap-5 md:ml-52 md:grid-cols-2">
+    <div className="grid gap-5 lg:grid-cols-2">
       <section>
-        <h1 className="text-3xl font-black tracking-normal">Event Mode</h1>
-        <p className="mt-2 text-neutral-600">Set up the room, share context, and turn attendees into warm follow-ups.</p>
+        <div className="page-intro compact-intro">
+          <div><p className="eyebrow">Before, during, after</p><h2>Give every room a memory.</h2><p>Share context in the moment, then carry the right conversations forward.</p></div>
+        </div>
       </section>
 
       <section className="panel md:col-start-1">

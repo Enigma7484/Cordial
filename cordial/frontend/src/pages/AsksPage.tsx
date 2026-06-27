@@ -26,10 +26,11 @@ export default function AsksPage({ profile }: { profile: Profile }) {
   }, []);
 
   return (
-    <div className="grid gap-5 md:ml-52 md:grid-cols-[0.9fr_1.1fr]">
+    <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
       <section className="space-y-5">
-        <h1 className="text-3xl font-black tracking-normal">Signals</h1>
-        <p className="mt-2 text-neutral-600">Small asks and offers that make reconnecting less awkward.</p>
+        <div className="page-intro compact-intro">
+          <div><p className="eyebrow">Ask clearly. Offer generously.</p><h2>Give people a reason to reach out.</h2><p>Small asks and offers turn a quiet network into a useful community.</p></div>
+        </div>
         <AskComposer onCreated={(ask) => setAsks((current) => [ask, ...current])} />
         <section className="panel">
           <div className="flex items-center justify-between gap-3">

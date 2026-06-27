@@ -1,4 +1,4 @@
-import { CalendarPlus, Check, Clock3, Handshake, Pencil, Plus, Radio, RotateCcw, ShieldCheck, Sparkles, Target, Trash2, X } from "lucide-react";
+import { CalendarPlus, Check, Clock3, Handshake, Pencil, Plus, Radio, RotateCcw, Sparkles, Target, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { api, Ask, Connection, ConnectionTimeline, DemoSeedResult, Event, Followup, Profile, SignalReply } from "../lib/api";
 
@@ -209,7 +209,7 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
     try {
       const result = await api<DemoSeedResult>("/demo/seed", { method: "POST" });
       await loadDashboard();
-      setSeedMessage(`Demo room ready: ${result.event.name} (${result.event.code}). Use the pitch path below to walk it.`);
+      setSeedMessage(`Sample workspace ready: ${result.event.name} (${result.event.code}). Your people, room, and follow-ups are now connected.`);
     } catch (seedError) {
       setSeedMessage("");
       setSeedError(seedError instanceof Error ? seedError.message : "Could not seed demo data");
@@ -219,23 +219,25 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
   }
 
   return (
-    <div className="grid gap-5 md:ml-52 md:grid-cols-[1.1fr_0.9fr]">
+    <div className="home-layout">
       <section className="space-y-5">
-        <div className="experience-hero">
+        <div className="experience-hero home-hero">
           <div>
             <p className="text-sm font-bold text-blue">@{profile.handle}</p>
-            <h1 className="mt-2 max-w-2xl text-4xl font-black tracking-normal">Hi, {profile.name || "there"}.</h1>
-            <p className="mt-3 max-w-xl text-neutral-600">Your relationship command layer for events, warm intros, signals, and follow-ups.</p>
+            <h2 className="mt-2 max-w-2xl text-3xl font-black tracking-normal md:text-4xl">Good to see you, {profile.name?.split(" ")[0] || "there"}.</h2>
+            <p className="mt-3 max-w-xl text-neutral-600">Here are the people and promises worth your attention today.</p>
           </div>
           <div className="hero-signal">
             <Radio size={28} />
             <span>{openFollowups.length + signalReplies.length + events.length} live loop(s)</span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={seedDemo} type="button" disabled={busy}>
-              <Sparkles size={15} />
-              {busy && seedMessage ? "Seeding demo..." : "Seed pitch demo"}
-            </button>
+            {connections.length === 0 && events.length <= 1 && (
+              <button className="btn-primary !h-9 !min-h-9 !px-3" onClick={seedDemo} type="button" disabled={busy}>
+                <Sparkles size={15} />
+                {busy && seedMessage ? "Building workspace..." : "Explore with sample people"}
+              </button>
+            )}
             <a className="btn-soft !h-9 !min-h-9 !px-3" href={`#/u/${profile.handle}`} target="_blank" rel="noreferrer">
               Public profile
             </a>
@@ -246,7 +248,7 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
         <section className="panel">
           <div className="flex items-center gap-2">
             <Target size={18} />
-            <h2 className="font-bold">Command Center</h2>
+            <h2 className="font-bold">Today's pulse</h2>
           </div>
           <div className="metric-strip mt-4">
             <div className="metric-card">
@@ -298,24 +300,12 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
               </div>
             </div>
           )}
-          <div className="mt-4 rounded-lg border border-line p-3">
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={16} />
-              <p className="text-sm font-bold">5-minute pitch path</p>
-            </div>
-            <div className="mt-3 grid gap-2 text-sm text-neutral-600 md:grid-cols-5">
-              {["Seed demo", "Share room QR", "Connect", "Follow up", "Copy report"].map((step, index) => (
-                <div key={step} className="pitch-step">
-                  <span>{index + 1}</span>
-                  {step}
-                </div>
-              ))}
-            </div>
-          </div>
         </section>
 
         <section className="panel space-y-3">
-          <h2 className="font-bold">Connections</h2>
+          <div className="section-heading">
+            <div><p className="eyebrow">Relationship memory</p><h2 className="font-bold">Recent people</h2></div>
+          </div>
           {loading && <p className="text-sm text-neutral-500">Loading connections...</p>}
           {!loading && connections.length === 0 && (
             <p className="text-sm text-neutral-500">Connect by handle to start a lightweight contact list.</p>
@@ -369,7 +359,7 @@ export default function Home({ profile, onOpenConnection }: { profile: Profile; 
         <form onSubmit={connect} className="panel space-y-3">
           <div className="flex items-center gap-2">
             <Handshake size={18} />
-            <h2 className="font-bold">Quick Connect</h2>
+            <h2 className="font-bold">Add someone</h2>
           </div>
           <input
             className="input"
