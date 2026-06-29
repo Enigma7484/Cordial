@@ -1,10 +1,19 @@
 import { ArrowLeft, ArrowRight, CalendarCheck2, Check, Mail, MessageCircleMore, Moon, Sparkles, Sun, UsersRound } from "lucide-react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import BrandMark from "../components/BrandMark";
 import { api } from "../lib/api";
 import { setToken } from "../lib/auth";
+import { AppPreferences } from "../lib/preferences";
 
-export default function AuthPage({ onAuthed }: { onAuthed: () => void }) {
+export default function AuthPage({
+  onAuthed,
+  preferences,
+  onPreferencesChange,
+}: {
+  onAuthed: () => void;
+  preferences: AppPreferences;
+  onPreferencesChange: (preferences: AppPreferences) => void;
+}) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [devOtp, setDevOtp] = useState("");
@@ -13,13 +22,7 @@ export default function AuthPage({ onAuthed }: { onAuthed: () => void }) {
   const [busy, setBusy] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [dark, setDark] = useState(() => localStorage.getItem("cordial_theme") === "dark");
   const codeRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("cordial_theme", dark ? "dark" : "light");
-  }, [dark]);
 
   async function requestOtp(event?: FormEvent) {
     event?.preventDefault();
@@ -72,8 +75,13 @@ export default function AuthPage({ onAuthed }: { onAuthed: () => void }) {
 
   return (
     <main className="auth-page">
-      <button className="auth-theme-toggle icon-button" onClick={() => setDark(!dark)} title="Toggle theme" type="button">
-        {dark ? <Sun size={18} /> : <Moon size={18} />}
+      <button
+        className="auth-theme-toggle icon-button"
+        onClick={() => onPreferencesChange({ ...preferences, theme: preferences.theme === "dark" ? "light" : "dark" })}
+        title="Toggle theme"
+        type="button"
+      >
+        {preferences.theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
       <section className="auth-story">

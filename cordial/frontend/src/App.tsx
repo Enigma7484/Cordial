@@ -53,6 +53,14 @@ function pageFromHash(): Page {
   return (match?.[1] as Page) || "home";
 }
 
+function contrastFor(hex: string) {
+  const value = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(value)) return "#ffffff";
+  const [red, green, blue] = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16) / 255);
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  return luminance > 0.62 ? "#111827" : "#ffffff";
+}
+
 export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [page, setPageState] = useState<Page>(() => pageFromHash());
@@ -123,7 +131,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", preferences.theme === "dark");
-    document.documentElement.classList.toggle("theme-aurora", preferences.theme === "aurora");
+    document.documentElement.dataset.palette = preferences.palette;
+    document.documentElement.classList.toggle("custom-accent", Boolean(preferences.customAccent));
+    if (preferences.customAccent) {
+      document.documentElement.style.setProperty("--custom-accent", preferences.customAccent);
+      document.documentElement.style.setProperty("--accent-contrast", contrastFor(preferences.customAccent));
+    } else {
+      document.documentElement.style.removeProperty("--custom-accent");
+      document.documentElement.style.removeProperty("--accent-contrast");
+    }
     document.documentElement.classList.toggle("density-compact", preferences.density === "compact");
     document.documentElement.classList.toggle("motion-expressive", preferences.motion === "expressive");
     savePreferences(preferences);
@@ -139,7 +155,7 @@ export default function App() {
   }
 
   if (publicHandle) return <PublicProfilePage handle={publicHandle} />;
-  if (!profile) return <AuthPage onAuthed={loadProfile} />;
+  if (!profile) return <AuthPage onAuthed={loadProfile} preferences={preferences} onPreferencesChange={setPreferences} />;
 
   const meta = pageMeta[page];
 
