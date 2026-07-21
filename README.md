@@ -1,2 +1,7 @@
 # Cordial
-A lightweight networking/social app for students, early-career professionals, and community-driven events. Cordial helps people stay in touch after real-life conversations without asking for Instagram and without using overly formal LinkedIn. It is designed to feel fresh, intentional, and community-native enough to sit naturally near Discord's world of groups, events, and relationships.
+
+Cordial is a human-approved networking intelligence and relationship-memory application. The working project lives in [`cordial/`](cordial/).
+
+It imports professional contacts the user is authorized to process, ranks a small explainable shortlist, keeps employment/contact evidence visible, prepares two grounded outreach strategies, requires exact human approval, and records replies and relationship history.
+
+See the [application README](cordial/README.md) for setup, verification, architecture, privacy constraints, current limitations, and the production path.

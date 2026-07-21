@@ -157,3 +157,85 @@ export type DemoSeedResult = {
   people: Profile[];
   connections_created: number;
 };
+
+export type NetworkOverview = {
+  contacts: number;
+  campaigns: number;
+  needs_review: number;
+  sent: number;
+  suppressed: number;
+};
+
+export type Campaign = {
+  id: string;
+  name: string;
+  objective: string;
+  status: "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED";
+  target_companies: string[];
+  target_roles: string[];
+  relevant_schools: string[];
+  relevant_skills: string[];
+  preferred_locations: string[];
+  intended_ask: string;
+  maximum_candidate_count: number;
+  allowed_outreach_channels: string[];
+  daily_sending_limit: number;
+};
+
+export type ContactChannel = {
+  id: string;
+  channel_type: "EMAIL" | "LINKEDIN_ASSISTED";
+  address_or_profile_url: string;
+  verification_status: "VERIFIED" | "HIGH_CONFIDENCE" | "POSSIBLE" | "UNVERIFIED" | "CONFLICTING" | "DO_NOT_USE";
+  confidence_score: number;
+  permitted_use_status: string;
+  risk_flags: string[];
+};
+
+export type MessageDraft = {
+  id: string;
+  strategy: "SHARED_CONTEXT" | "DIRECT_RELEVANCE";
+  subject: string;
+  body: string;
+  evidence_used: string[];
+  quality_review: { status: "PASSED" | "BLOCKED"; issues: string[] };
+  status: string;
+  version: number;
+};
+
+export type NetworkCandidate = {
+  id: string;
+  rank: number;
+  relevance_score: number;
+  review_status: string;
+  employment_confidence: { status: string; confidence: number; reason: string };
+  score_breakdown: { key: string; label: string; points: number }[];
+  contact: {
+    id: string;
+    name: string;
+    first_name: string;
+    company: string;
+    position: string;
+    school: string;
+    graduation_year?: number;
+    location: string;
+    skills: string[];
+    profile_url: string;
+  };
+  channels: ContactChannel[];
+  evidence: { id: string; source_type: string; source_url: string; observed_value: string; observed_at: string; notes: string }[];
+  drafts: MessageDraft[];
+  timeline: { id: string; event_type: string; title: string; created_at: string }[];
+};
+
+export type CampaignAnalytics = {
+  candidates_reviewed: number;
+  candidates_approved: number;
+  messages_sent: number;
+  response_rate: number;
+  positive_response_rate: number;
+  meetings_generated: number;
+  referrals_generated: number;
+  bounce_rate: number;
+  opt_out_rate: number;
+};

@@ -1,0 +1,3 @@
+first_name,last_name,profile_url,email,company,position,connected_on,school,graduation_year,location,skills,notes
+Avery,Morgan,https://example.com/profiles/avery,avery.morgan@demo.invalid,Intuit,Software Engineer,2024-02-12,York University,2022,"Toronto, ON","TypeScript; React; Python",Synthetic example only
+Noor,Hassan,https://example.com/profiles/noor,noor.hassan@demo.invalid,RBC,DevOps Engineer,2023-08-04,York University,2021,"Toronto, ON","DevOps; Kubernetes; Python",Synthetic example only

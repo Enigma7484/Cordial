@@ -8,6 +8,7 @@ import {
   Moon,
   Settings,
   Sun,
+  Target,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -23,14 +24,16 @@ import ConnectionPage from "./pages/ConnectionPage";
 import PeoplePage from "./pages/PeoplePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import SettingsPage from "./pages/SettingsPage";
+import NetworkPage from "./pages/NetworkPage";
 import { api, Profile } from "./lib/api";
 import { clearToken, getToken } from "./lib/auth";
 import { AppPreferences, loadPreferences, savePreferences } from "./lib/preferences";
 
-type Page = "home" | "people" | "events" | "asks" | "apps" | "profile" | "settings" | "connection";
+type Page = "home" | "network" | "people" | "events" | "asks" | "apps" | "profile" | "settings" | "connection";
 
 const nav = [
   { id: "home", label: "Today", icon: HomeIcon },
+  { id: "network", label: "Campaigns", icon: Target },
   { id: "people", label: "People", icon: UsersRound },
   { id: "events", label: "Rooms", icon: CalendarDays },
   { id: "asks", label: "Signals", icon: MessageCircleMore },
@@ -39,6 +42,7 @@ const nav = [
 
 const pageMeta: Record<Page, { eyebrow: string; title: string }> = {
   home: { eyebrow: "Your workspace", title: "Today" },
+  network: { eyebrow: "Networking intelligence", title: "Campaigns" },
   people: { eyebrow: "Relationship memory", title: "People" },
   events: { eyebrow: "Shared context", title: "Rooms" },
   asks: { eyebrow: "Community exchange", title: "Signals" },
@@ -49,7 +53,7 @@ const pageMeta: Record<Page, { eyebrow: string; title: string }> = {
 };
 
 function pageFromHash(): Page {
-  const match = window.location.hash.match(/^#\/(home|people|events|asks|apps|profile|settings)$/);
+  const match = window.location.hash.match(/^#\/(home|network|people|events|asks|apps|profile|settings)$/);
   return (match?.[1] as Page) || "home";
 }
 
@@ -115,7 +119,7 @@ export default function App() {
     function syncHash() {
       const profileMatch = window.location.hash.match(/^#\/u\/([a-zA-Z0-9_]+)/);
       const joinMatch = window.location.hash.match(/^#\/join\/([a-zA-Z0-9]+)/);
-      const appMatch = window.location.hash.match(/^#\/(home|people|events|asks|apps|profile|settings)$/);
+      const appMatch = window.location.hash.match(/^#\/(home|network|people|events|asks|apps|profile|settings)$/);
       setPublicHandle(profileMatch?.[1] || "");
       setJoinCodeFromHash(joinMatch?.[1]?.toUpperCase() || "");
       if (joinMatch) setPageState("events");
@@ -144,6 +148,10 @@ export default function App() {
     document.documentElement.classList.toggle("motion-expressive", preferences.motion === "expressive");
     savePreferences(preferences);
   }, [preferences]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [page, profile]);
 
   if (loading) {
     return (
@@ -256,6 +264,7 @@ export default function App() {
               }}
             />
           )}
+          {page === "network" && <NetworkPage />}
           {page === "people" && (
             <PeoplePage
               onOpenConnection={(connectionId) => {
