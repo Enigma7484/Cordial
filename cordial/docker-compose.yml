@@ -7,6 +7,45 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cordial-api
+    restart: unless-stopped
+    environment:
+      PORT: 10000
+      APP_NAME: Cordial API
+      ENV: development
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: cordial
+      JWT_SECRET: ${JWT_SECRET:-local-docker-only-change-before-production}
+      FRONTEND_ORIGINS: http://localhost:5174,http://127.0.0.1:5174
+      SHOW_DEV_OTP: ${SHOW_DEV_OTP:-true}
+      NETWORK_EMAIL_PROVIDER: mock
+    ports:
+      - "8010:10000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8010
+    container_name: cordial-web
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      backend:
+        condition: service_started
 
 volumes:
   mongo_data:
